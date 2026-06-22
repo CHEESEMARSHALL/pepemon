@@ -6,6 +6,7 @@ class_name OverworldMapData
 @export var rows: Array[String] = []
 @export var sign_messages: Array[Dictionary] = []
 @export var interactables: Array[Dictionary] = []
+@export var transitions: Array[Dictionary] = []
 
 
 func get_tile_code(cell: Vector2i) -> String:
@@ -46,6 +47,17 @@ func get_sign_message(cell: Vector2i) -> String:
 
 func get_interactable_entries() -> Array[Dictionary]:
 	return interactables
+
+
+func get_transition_entry(cell: Vector2i) -> Dictionary:
+	for transition in transitions:
+		if not transition is Dictionary:
+			continue
+
+		if transition.get("cell", Vector2i(-999, -999)) == cell:
+			return transition
+
+	return {}
 
 
 func is_inside_map(cell: Vector2i) -> bool:

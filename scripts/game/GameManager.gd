@@ -4,6 +4,7 @@ class_name GameManager
 const SaveManagerScript := preload("res://scripts/game/SaveManager.gd")
 
 @export var overworld_scene: PackedScene
+@export var starting_map_data: Resource
 @export var battle_scene: PackedScene
 @export var starter_monster_data: Resource
 @export var starter_party_data: Array[Resource] = []
@@ -39,6 +40,8 @@ var _player_party: Array[Resource] = []
 var _inventory := {}
 var _route_state := {}
 var _current_scene: Node
+var _current_map_data: Resource
+var _pending_overworld_start_cell := Vector2i(-999, -999)
 var _active_menu_tab := "party"
 var _pending_trainer_id := ""
 
@@ -64,6 +67,17 @@ func show_overworld() -> void:
 		return
 
 	_current_scene = overworld_scene.instantiate()
+
+	if _current_map_data == null:
+		_current_map_data = starting_map_data
+
+	if _current_map_data != null:
+		_current_scene.set("map_data", _current_map_data)
+
+	if _pending_overworld_start_cell != Vector2i(-999, -999):
+		_current_scene.set("player_start_cell_override", _pending_overworld_start_cell)
+		_pending_overworld_start_cell = Vector2i(-999, -999)
+
 	_scene_root.add_child(_current_scene)
 	_apply_route_state_to_overworld(_current_scene)
 	_connect_overworld(_current_scene)
@@ -140,6 +154,9 @@ func _connect_overworld(scene: Node) -> void:
 
 	if scene.has_signal("pickup_collected"):
 		scene.pickup_collected.connect(_collect_pickup)
+
+	if scene.has_signal("route_transition_requested"):
+		scene.route_transition_requested.connect(_change_route)
 
 
 func toggle_overworld_menu() -> void:
@@ -609,3 +626,12 @@ func _collect_pickup(pickup_id: String, item_key: String, item_count: int, _item
 
 	if not _route_state["collected_pickups"].has(pickup_id):
 		_route_state["collected_pickups"].append(pickup_id)
+
+
+func _change_route(target_map: Resource, target_start_cell: Vector2i) -> void:
+	if target_map == null:
+		return
+
+	_current_map_data = target_map
+	_pending_overworld_start_cell = target_start_cell
+	show_overworld()

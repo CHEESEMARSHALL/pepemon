@@ -16,10 +16,11 @@ func _run() -> void:
 	_validate_map_data()
 	await _validate_scene_content()
 	await _validate_trainer_sight_scene()
+	await _validate_route_transition_flow()
 	await _validate_grass_encounter_flow()
 	await _validate_game_manager_trainer_state_flow()
 	await _validate_game_manager_pickup_flow()
-	print("Overworld content validation passed: authored map, collisions, signs, NPCs, trainer sight, pickups, and grass encounters.")
+	print("Overworld content validation passed: authored map, transitions, collisions, signs, NPCs, trainer sight, pickups, and grass encounters.")
 	quit()
 
 
@@ -43,6 +44,20 @@ func _validate_map_data() -> void:
 
 	if route_data.get_tile_code(Vector2i(9, 8)) != "G":
 		push_error("Route1.tres does not place grass east of the player start.")
+		quit(1)
+		return
+
+	var route_transition: Dictionary = route_data.get_transition_entry(Vector2i(14, 6))
+
+	if route_transition.is_empty() or str(route_transition.get("target_map_path", "")).is_empty():
+		push_error("Route1.tres is missing the authored Route 2 transition.")
+		quit(1)
+		return
+
+	var route_2 = load(route_transition.get("target_map_path"))
+
+	if route_2 == null or route_2.map_name != "Pepemon Route 2":
+		push_error("Route1.tres transition does not load Route 2.")
 		quit(1)
 		return
 
@@ -247,6 +262,59 @@ func _validate_trainer_sight_scene() -> void:
 		return
 
 	overworld.queue_free()
+
+
+func _validate_route_transition_flow() -> void:
+	var game_root_scene := load("res://scenes/game/GameRoot.tscn") as PackedScene
+
+	if game_root_scene == null:
+		push_error("Failed to load GameRoot.tscn for route transition validation.")
+		quit(1)
+		return
+
+	var game_root := game_root_scene.instantiate()
+	game_root.auto_load_save = false
+	game_root.auto_save_after_battle = false
+	get_root().add_child(game_root)
+	await process_frame
+	await process_frame
+
+	var scene_root := game_root.get_node("%SceneRoot")
+	var overworld := scene_root.get_child(0)
+	var player := overworld.find_child("Player", true, false) as PlayerController
+	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
+	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(14, 6)))
+	overworld.call("_on_player_step_finished", Vector2i(14, 6))
+	await process_frame
+	await process_frame
+
+	overworld = scene_root.get_child(0)
+	player = overworld.find_child("Player", true, false) as PlayerController
+	tile_map = overworld.get_node("%GroundTileMap") as TileMap
+	var route_2_data = overworld.get("map_data")
+	var route_2_cell := tile_map.local_to_map(tile_map.to_local(player.global_position))
+
+	if route_2_data == null or route_2_data.map_name != "Pepemon Route 2" or route_2_cell != Vector2i(1, 6):
+		push_error("Route transition did not move the player to Route 2.")
+		quit(1)
+		return
+
+	overworld.call("_on_player_step_finished", Vector2i(1, 6))
+	await process_frame
+	await process_frame
+
+	overworld = scene_root.get_child(0)
+	player = overworld.find_child("Player", true, false) as PlayerController
+	tile_map = overworld.get_node("%GroundTileMap") as TileMap
+	var route_1_data = overworld.get("map_data")
+	var route_1_cell := tile_map.local_to_map(tile_map.to_local(player.global_position))
+
+	if route_1_data == null or route_1_data.map_name != "Pepemon Route 1" or route_1_cell != Vector2i(14, 6):
+		push_error("Return transition did not move the player back to Route 1.")
+		quit(1)
+		return
+
+	game_root.queue_free()
 
 
 func _validate_grass_encounter_flow() -> void:

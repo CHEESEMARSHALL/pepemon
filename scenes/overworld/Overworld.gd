@@ -3,9 +3,11 @@ extends Node2D
 signal battle_triggered(enemy_monster: Resource, enemy_level: int)
 signal trainer_battle_triggered(trainer_id: String, enemy_monster: Resource, enemy_level: int)
 signal pickup_collected(pickup_id: String, item_key: String, item_count: int, item_name: String)
+signal route_transition_requested(target_map: Resource, target_start_cell: Vector2i)
 
 @export var map_data: Resource
 @export var interactable_scene: PackedScene
+@export var player_start_cell_override := Vector2i(-999, -999)
 
 const CELL_SIZE := Vector2i(16, 16)
 const SOURCE_ID := 0
@@ -72,7 +74,8 @@ func _setup_map() -> void:
 			var cell := Vector2i(x, y)
 			_ground_tile_map.set_cell(0, cell, SOURCE_ID, _get_tile_atlas_coords(map_data.get_tile_code(cell)))
 
-	_player.global_position = _ground_tile_map.to_global(_ground_tile_map.map_to_local(map_data.player_start_cell))
+	var start_cell: Vector2i = player_start_cell_override if player_start_cell_override != Vector2i(-999, -999) else map_data.player_start_cell
+	_player.global_position = _ground_tile_map.to_global(_ground_tile_map.map_to_local(start_cell))
 
 
 func _get_tile_atlas_coords(tile_code: String) -> Vector2i:
@@ -216,9 +219,34 @@ func _on_player_step_finished(cell: Vector2i) -> void:
 	var trainer := _get_sighting_trainer(cell)
 
 	if trainer == null:
+		_check_route_transition(cell)
 		return
 
 	_trigger_trainer_sight(trainer)
+
+
+func _check_route_transition(cell: Vector2i) -> void:
+	if map_data == null or not map_data.has_method("get_transition_entry"):
+		return
+
+	var transition: Dictionary = map_data.get_transition_entry(cell)
+
+	if transition.is_empty():
+		return
+
+	var target_map = transition.get("target_map", null)
+
+	if target_map == null:
+		var target_map_path := str(transition.get("target_map_path", ""))
+
+		if not target_map_path.is_empty():
+			target_map = load(target_map_path)
+
+	if target_map == null:
+		return
+
+	_player.movement_enabled = false
+	route_transition_requested.emit(target_map, transition.get("target_start_cell", Vector2i.ZERO))
 
 
 func _get_sighting_trainer(player_cell: Vector2i) -> Node:

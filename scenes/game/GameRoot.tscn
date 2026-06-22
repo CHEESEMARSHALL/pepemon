@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/game/GameManager.gd" id="1_game_manager"]
 [ext_resource type="PackedScene" path="res://scenes/overworld/Overworld.tscn" id="2_overworld"]
@@ -6,10 +6,12 @@
 [ext_resource type="Resource" path="res://data/monsters/FireMonster.tres" id="4_starter"]
 [ext_resource type="Resource" path="res://data/monsters/WaterMonster.tres" id="5_water"]
 [ext_resource type="Resource" path="res://data/items/Potion.tres" id="6_potion"]
+[ext_resource type="Resource" path="res://data/overworld/Route1.tres" id="7_route_1"]
 
 [node name="GameRoot" type="Node"]
 script = ExtResource("1_game_manager")
 overworld_scene = ExtResource("2_overworld")
+starting_map_data = ExtResource("7_route_1")
 battle_scene = ExtResource("3_battle")
 starter_monster_data = ExtResource("4_starter")
 starter_party_data = Array[Resource]([ExtResource("4_starter"), ExtResource("5_water")])
