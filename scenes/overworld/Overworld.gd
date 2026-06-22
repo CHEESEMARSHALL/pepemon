@@ -76,6 +76,7 @@ func _setup_map() -> void:
 
 	var start_cell: Vector2i = player_start_cell_override if player_start_cell_override != Vector2i(-999, -999) else map_data.player_start_cell
 	_player.global_position = _ground_tile_map.to_global(_ground_tile_map.map_to_local(start_cell))
+	_player.encounter_table = map_data.encounter_table
 
 
 func _get_tile_atlas_coords(tile_code: String) -> Vector2i:

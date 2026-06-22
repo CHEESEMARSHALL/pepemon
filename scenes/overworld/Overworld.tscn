@@ -1,8 +1,7 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/PlayerController.gd" id="1_player_controller"]
 [ext_resource type="Script" path="res://scenes/overworld/Overworld.gd" id="2_overworld"]
-[ext_resource type="Resource" path="res://data/encounters/StarterGrass.tres" id="3_encounter_table"]
 [ext_resource type="PackedScene" path="res://scenes/overworld/NpcInteractable.tscn" id="4_npc_interactable"]
 [ext_resource type="Resource" path="res://data/overworld/Route1.tres" id="6_route_1"]
 
@@ -19,7 +18,6 @@ unique_name_in_owner = true
 position = Vector2(128, 128)
 script = ExtResource("1_player_controller")
 tile_map_path = NodePath("../GroundTileMap")
-encounter_table = ExtResource("3_encounter_table")
 
 [node name="HintLabel" type="Label" parent="."]
 offset_left = 24.0

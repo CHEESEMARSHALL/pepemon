@@ -1,11 +1,13 @@
-[gd_resource type="Resource" script_class="OverworldMapData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="OverworldMapData" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/OverworldMapData.gd" id="1_map_data"]
+[ext_resource type="Resource" path="res://data/encounters/Route2Grass.tres" id="2_route_2_grass"]
 
 [resource]
 script = ExtResource("1_map_data")
 map_name = "Pepemon Route 2"
 player_start_cell = Vector2i(1, 6)
+encounter_table = ExtResource("2_route_2_grass")
 rows = Array[String](["################", "#..............#", "#....GGGG......#", "#....GGGG......#", "#..............#", "#.############.#", "#..............#", "#.############.#", "#..............#", "#......S.......#", "#..............#", "################"])
 sign_messages = Array[Dictionary]([{ "cell": Vector2i(7, 9), "message": "Pepemon Route 2\nA quiet road for future content." }])
 transitions = Array[Dictionary]([{ "cell": Vector2i(1, 6), "target_map_path": "res://data/overworld/Route1.tres", "target_start_cell": Vector2i(14, 6) }])

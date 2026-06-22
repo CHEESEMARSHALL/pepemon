@@ -3,6 +3,7 @@ class_name OverworldMapData
 
 @export var map_name := ""
 @export var player_start_cell := Vector2i(8, 8)
+@export var encounter_table: Resource
 @export var rows: Array[String] = []
 @export var sign_messages: Array[Dictionary] = []
 @export var interactables: Array[Dictionary] = []

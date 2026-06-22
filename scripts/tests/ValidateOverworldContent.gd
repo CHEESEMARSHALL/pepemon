@@ -61,6 +61,31 @@ func _validate_map_data() -> void:
 		quit(1)
 		return
 
+	if route_data.encounter_table == null:
+		push_error("Route1.tres is missing its route-specific encounter table.")
+		quit(1)
+		return
+
+	if route_2.encounter_table == null:
+		push_error("Route2.tres is missing its route-specific encounter table.")
+		quit(1)
+		return
+
+	if route_data.encounter_table == route_2.encounter_table:
+		push_error("Route1.tres and Route2.tres should not share the same encounter table resource.")
+		quit(1)
+		return
+
+	var route_2_rng := RandomNumberGenerator.new()
+	route_2_rng.seed = 22
+	var route_2_encounter: Dictionary = route_2.encounter_table.get_random_encounter(route_2_rng)
+	var route_2_monster = route_2_encounter.get("monster", null)
+
+	if route_2_monster == null or route_2_monster.monster_name != "Aquabbit" or int(route_2_encounter.get("level", 0)) != 6:
+		push_error("Route2.tres encounter table should produce a level 6 Aquabbit.")
+		quit(1)
+		return
+
 	if route_data.get_sign_message(Vector2i(7, 8)).is_empty():
 		push_error("Route1.tres is missing the route sign message.")
 		quit(1)
@@ -158,6 +183,11 @@ func _validate_scene_content() -> void:
 
 	if start_cell != Vector2i(8, 8):
 		push_error("Expected player to start on cell (8, 8), got %s." % str(start_cell))
+		quit(1)
+		return
+
+	if player.encounter_table == null or player.encounter_table != overworld.get("map_data").encounter_table:
+		push_error("Overworld did not assign the current map encounter table to the player.")
 		quit(1)
 		return
 
@@ -299,6 +329,11 @@ func _validate_route_transition_flow() -> void:
 		quit(1)
 		return
 
+	if player.encounter_table == null or player.encounter_table != route_2_data.encounter_table:
+		push_error("Route transition did not assign Route 2 encounter data to the player.")
+		quit(1)
+		return
+
 	overworld.call("_on_player_step_finished", Vector2i(1, 6))
 	await process_frame
 	await process_frame
@@ -311,6 +346,11 @@ func _validate_route_transition_flow() -> void:
 
 	if route_1_data == null or route_1_data.map_name != "Pepemon Route 1" or route_1_cell != Vector2i(14, 6):
 		push_error("Return transition did not move the player back to Route 1.")
+		quit(1)
+		return
+
+	if player.encounter_table == null or player.encounter_table != route_1_data.encounter_table:
+		push_error("Return transition did not restore Route 1 encounter data to the player.")
 		quit(1)
 		return
 
