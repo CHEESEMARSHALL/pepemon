@@ -177,6 +177,13 @@ func _init() -> void:
 		quit(1)
 		return
 
+	var trainer_interaction_script := load("res://scripts/tests/ValidateTrainerInteraction.gd") as Script
+
+	if trainer_interaction_script == null:
+		push_error("Failed to load ValidateTrainerInteraction.gd.")
+		quit(1)
+		return
+
 	var battle_ui = battle_ui_scene.instantiate()
 	get_root().add_child(battle_ui)
 	battle_ui.queue_free()

@@ -1,5 +1,7 @@
 extends Node2D
 
+signal battle_triggered(enemy_monster: Resource, enemy_level: int)
+
 const CELL_SIZE := Vector2i(16, 16)
 const SOURCE_ID := 0
 const DIRT_TILE := Vector2i(0, 0)
@@ -137,8 +139,8 @@ func _on_player_interaction_requested(cell: Vector2i) -> void:
 	if _interactables_by_cell.has(cell):
 		var interactable = _interactables_by_cell[cell]
 
-		if interactable != null and interactable.has_method("get_interaction_text") and not interactable.get_interaction_text().is_empty():
-			_show_dialogue(interactable.get_interaction_text())
+		if interactable != null:
+			_handle_interactable(interactable)
 
 		return
 
@@ -153,6 +155,20 @@ func _on_player_interaction_requested(cell: Vector2i) -> void:
 		return
 
 	_show_dialogue(message)
+
+
+func _handle_interactable(interactable: Node) -> void:
+	var action := 0
+
+	if interactable.has_method("get_interaction_action"):
+		action = int(interactable.get_interaction_action())
+
+	if action == 1:
+		battle_triggered.emit(interactable.battle_monster_data, int(interactable.battle_monster_level))
+		return
+
+	if interactable.has_method("get_interaction_text") and not interactable.get_interaction_text().is_empty():
+		_show_dialogue(interactable.get_interaction_text())
 
 
 func _show_dialogue(message: String) -> void:

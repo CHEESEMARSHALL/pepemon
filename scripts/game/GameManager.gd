@@ -129,6 +129,9 @@ func _connect_overworld(scene: Node) -> void:
 
 	player.battle_triggered.connect(start_battle)
 
+	if scene.has_signal("battle_triggered"):
+		scene.battle_triggered.connect(start_battle)
+
 
 func toggle_overworld_menu() -> void:
 	if _current_scene == null or _current_scene is BattleUI:
