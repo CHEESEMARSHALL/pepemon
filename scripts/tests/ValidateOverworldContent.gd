@@ -48,6 +48,23 @@ func _validate_map_data() -> void:
 		push_error("Route1.tres should include multiple authored signs.")
 		quit(1)
 
+	var interactable_entries: Array[Dictionary] = route_data.get_interactable_entries()
+
+	if interactable_entries.size() < 4:
+		push_error("Route1.tres should include multiple authored interactables.")
+		quit(1)
+		return
+
+	var trainer_count := 0
+
+	for entry in interactable_entries:
+		if int(entry.get("action", 0)) == 1:
+			trainer_count += 1
+
+	if trainer_count < 2:
+		push_error("Route1.tres should include multiple authored trainer battles.")
+		quit(1)
+
 
 func _validate_scene_content() -> void:
 	var overworld := await _instantiate_overworld()

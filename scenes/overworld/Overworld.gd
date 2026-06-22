@@ -3,6 +3,7 @@ extends Node2D
 signal battle_triggered(enemy_monster: Resource, enemy_level: int)
 
 @export var map_data: Resource
+@export var interactable_scene: PackedScene
 
 const CELL_SIZE := Vector2i(16, 16)
 const SOURCE_ID := 0
@@ -31,6 +32,7 @@ var _interactables_by_cell: Dictionary = {}
 
 func _ready() -> void:
 	_setup_map()
+	_spawn_interactables_from_map_data()
 	_setup_interactables()
 	_player.interaction_requested.connect(_on_player_interaction_requested)
 	_dialogue_panel.visible = false
@@ -138,6 +140,28 @@ func _setup_interactables() -> void:
 
 		if child.blocks_movement:
 			_ground_tile_map.set_cell(0, child.grid_cell, SOURCE_ID, NPC_TILE)
+
+
+func _spawn_interactables_from_map_data() -> void:
+	if _interactables == null or map_data == null or interactable_scene == null:
+		return
+
+	for child in _interactables.get_children():
+		child.queue_free()
+
+	for entry in map_data.get_interactable_entries():
+		if not entry is Dictionary:
+			continue
+
+		var interactable := interactable_scene.instantiate()
+		interactable.name = str(entry.get("name", "Interactable"))
+		interactable.grid_cell = entry.get("cell", Vector2i.ZERO)
+		interactable.dialogue_text = str(entry.get("dialogue", ""))
+		interactable.blocks_movement = bool(entry.get("blocks_movement", true))
+		interactable.interaction_action = int(entry.get("action", 0))
+		interactable.battle_monster_data = entry.get("battle_monster", null)
+		interactable.battle_monster_level = int(entry.get("battle_level", 5))
+		_interactables.add_child(interactable)
 
 
 func _on_player_interaction_requested(cell: Vector2i) -> void:

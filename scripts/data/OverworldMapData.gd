@@ -5,6 +5,7 @@ class_name OverworldMapData
 @export var player_start_cell := Vector2i(8, 8)
 @export var rows: Array[String] = []
 @export var sign_messages: Array[Dictionary] = []
+@export var interactables: Array[Dictionary] = []
 
 
 func get_tile_code(cell: Vector2i) -> String:
@@ -41,3 +42,7 @@ func get_sign_message(cell: Vector2i) -> String:
 			return str(sign_entry.get("message", ""))
 
 	return ""
+
+
+func get_interactable_entries() -> Array[Dictionary]:
+	return interactables
