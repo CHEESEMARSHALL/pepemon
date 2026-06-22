@@ -35,8 +35,12 @@ func _init() -> void:
 		"defeated_trainers": ["trainer_rook", "trainer_vale"],
 		"collected_pickups": ["route1_potion"],
 	}
+	var world_state := {
+		"map_path": "res://data/overworld/Route2.tres",
+		"player_cell": Vector2i(5, 6),
+	}
 
-	if not save_manager_script.save_game([original, second], TEST_SAVE_PATH, 1, inventory, route_state):
+	if not save_manager_script.save_game([original, second], TEST_SAVE_PATH, 1, inventory, route_state, world_state):
 		push_error("SaveManager failed to save test data.")
 		quit(1)
 		return
@@ -67,6 +71,18 @@ func _init() -> void:
 
 	if not save_data["route_state"].get("collected_pickups", []).has("route1_potion"):
 		push_error("SaveManager failed to save collected pickup route state.")
+		quit(1)
+		return
+
+	if not save_data.has("world_state") or save_data["world_state"].get("map_path", "") != "res://data/overworld/Route2.tres":
+		push_error("SaveManager failed to save the current map path.")
+		quit(1)
+		return
+
+	var saved_cell: Dictionary = save_data["world_state"].get("player_cell", {})
+
+	if int(saved_cell.get("x", -1)) != 5 or int(saved_cell.get("y", -1)) != 6:
+		push_error("SaveManager failed to save the player cell.")
 		quit(1)
 		return
 

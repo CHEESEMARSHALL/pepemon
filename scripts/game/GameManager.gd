@@ -42,6 +42,7 @@ var _route_state := {}
 var _current_scene: Node
 var _current_map_data: Resource
 var _pending_overworld_start_cell := Vector2i(-999, -999)
+var _current_player_cell := Vector2i(-999, -999)
 var _active_menu_tab := "party"
 var _pending_trainer_id := ""
 
@@ -76,11 +77,13 @@ func show_overworld() -> void:
 
 	if _pending_overworld_start_cell != Vector2i(-999, -999):
 		_current_scene.set("player_start_cell_override", _pending_overworld_start_cell)
+		_current_player_cell = _pending_overworld_start_cell
 		_pending_overworld_start_cell = Vector2i(-999, -999)
 
 	_scene_root.add_child(_current_scene)
 	_apply_route_state_to_overworld(_current_scene)
 	_connect_overworld(_current_scene)
+	_capture_overworld_position()
 
 
 func start_battle(enemy_monster_data: Resource, enemy_level: int = 5) -> void:
@@ -92,6 +95,7 @@ func start_battle(enemy_monster_data: Resource, enemy_level: int = 5) -> void:
 		push_error("No enemy monster was selected for battle.")
 		return
 
+	_capture_overworld_position()
 	_clear_current_scene()
 
 	var enemy_instance := MonsterInstance.new()
@@ -158,6 +162,8 @@ func _connect_overworld(scene: Node) -> void:
 	if scene.has_signal("route_transition_requested"):
 		scene.route_transition_requested.connect(_change_route)
 
+	player.step_finished.connect(_on_player_step_finished)
+
 
 func toggle_overworld_menu() -> void:
 	if _current_scene == null or _current_scene is BattleUI:
@@ -199,8 +205,9 @@ func _on_battle_finished(_player_won: bool) -> void:
 		_pending_trainer_id = ""
 
 	if auto_save_after_battle:
-		SaveManagerScript.save_game(_player_party, SaveManagerScript.SAVE_PATH, _get_active_party_index(), _inventory, _route_state)
+		SaveManagerScript.save_game(_player_party, SaveManagerScript.SAVE_PATH, _get_active_party_index(), _inventory, _route_state, _get_world_state())
 
+	_pending_overworld_start_cell = _current_player_cell
 	show_overworld()
 
 
@@ -209,10 +216,11 @@ func _on_battle_escaped() -> void:
 	_sync_inventory_from_battle()
 
 	if auto_save_after_battle:
-		SaveManagerScript.save_game(_player_party, SaveManagerScript.SAVE_PATH, _get_active_party_index(), _inventory, _route_state)
+		SaveManagerScript.save_game(_player_party, SaveManagerScript.SAVE_PATH, _get_active_party_index(), _inventory, _route_state, _get_world_state())
 
 	_pending_trainer_id = ""
 
+	_pending_overworld_start_cell = _current_player_cell
 	show_overworld()
 
 
@@ -265,7 +273,9 @@ func _refresh_overworld_menu() -> void:
 
 
 func _save_from_menu() -> void:
-	if SaveManagerScript.save_game(_player_party, SaveManagerScript.SAVE_PATH, _get_active_party_index(), _inventory, _route_state):
+	_capture_overworld_position()
+
+	if SaveManagerScript.save_game(_player_party, SaveManagerScript.SAVE_PATH, _get_active_party_index(), _inventory, _route_state, _get_world_state()):
 		_menu_title_label.text = "Saved"
 		_menu_content_label.text = "Progress saved."
 
@@ -380,6 +390,7 @@ func _load_player_monster() -> bool:
 	_player_party = loaded_party
 	_inventory = _load_inventory_from_save(save_data)
 	_route_state = _load_route_state_from_save(save_data)
+	_load_world_state_from_save(save_data)
 	var active_index := clampi(int(save_data.get("active_party_index", 0)), 0, _player_party.size() - 1)
 	_player_monster = _player_party[active_index]
 	return true
@@ -483,6 +494,40 @@ func _load_route_state_from_save(save_data: Dictionary) -> Dictionary:
 				route_state["collected_pickups"].append(string_id)
 
 	return route_state
+
+
+func _load_world_state_from_save(save_data: Dictionary) -> void:
+	var raw_world_state = save_data.get("world_state", {})
+
+	if not raw_world_state is Dictionary:
+		return
+
+	var map_path := str(raw_world_state.get("map_path", ""))
+
+	if not map_path.is_empty():
+		var loaded_map := load(map_path)
+
+		if loaded_map != null:
+			_current_map_data = loaded_map
+
+	var player_cell := _parse_saved_cell(raw_world_state.get("player_cell", null))
+
+	if player_cell != Vector2i(-999, -999):
+		_pending_overworld_start_cell = player_cell
+		_current_player_cell = player_cell
+
+
+func _parse_saved_cell(raw_cell) -> Vector2i:
+	if raw_cell is Vector2i:
+		return raw_cell
+
+	if raw_cell is Dictionary:
+		return Vector2i(int(raw_cell.get("x", -999)), int(raw_cell.get("y", -999)))
+
+	if raw_cell is Array and raw_cell.size() >= 2:
+		return Vector2i(int(raw_cell[0]), int(raw_cell[1]))
+
+	return Vector2i(-999, -999)
 
 
 func _sanitize_inventory(raw_inventory) -> Dictionary:
@@ -634,4 +679,37 @@ func _change_route(target_map: Resource, target_start_cell: Vector2i) -> void:
 
 	_current_map_data = target_map
 	_pending_overworld_start_cell = target_start_cell
+	_current_player_cell = target_start_cell
 	show_overworld()
+
+
+func _on_player_step_finished(cell: Vector2i) -> void:
+	_current_player_cell = cell
+
+
+func _capture_overworld_position() -> void:
+	if _current_scene == null or _current_scene is BattleUI:
+		return
+
+	if _current_scene.has_method("get_player_cell"):
+		_current_player_cell = _current_scene.call("get_player_cell")
+
+
+func _get_world_state() -> Dictionary:
+	var map_path := ""
+
+	if _current_map_data != null:
+		map_path = str(_current_map_data.resource_path)
+
+	var player_cell := _current_player_cell
+
+	if player_cell == Vector2i(-999, -999):
+		if _current_map_data != null:
+			player_cell = _current_map_data.player_start_cell
+		else:
+			player_cell = Vector2i.ZERO
+
+	return {
+		"map_path": map_path,
+		"player_cell": player_cell,
+	}

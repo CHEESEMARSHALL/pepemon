@@ -59,6 +59,13 @@ func force_test_encounter(enemy_monster: Resource = null, enemy_level: int = 5) 
 		_player.trigger_battle()
 
 
+func get_player_cell() -> Vector2i:
+	if _ground_tile_map == null or _player == null:
+		return Vector2i.ZERO
+
+	return _ground_tile_map.local_to_map(_ground_tile_map.to_local(_player.global_position))
+
+
 func _setup_map() -> void:
 	if _ground_tile_map.tile_set == null:
 		_ground_tile_map.tile_set = _create_route_tile_set()

@@ -4,7 +4,14 @@ class_name SaveManager
 const SAVE_PATH := "user://savegame.json"
 
 
-static func save_game(player_data, path: String = SAVE_PATH, active_party_index: int = 0, inventory: Dictionary = {}, route_state: Dictionary = {}) -> bool:
+static func save_game(
+	player_data,
+	path: String = SAVE_PATH,
+	active_party_index: int = 0,
+	inventory: Dictionary = {},
+	route_state: Dictionary = {},
+	world_state: Dictionary = {}
+) -> bool:
 	var party_data := _serialize_party(player_data)
 
 	if party_data.is_empty():
@@ -12,7 +19,7 @@ static func save_game(player_data, path: String = SAVE_PATH, active_party_index:
 		return false
 
 	var save_data := {
-		"version": 4,
+		"version": 5,
 		"player_party": party_data,
 		"active_party_index": clampi(active_party_index, 0, party_data.size() - 1),
 	}
@@ -22,6 +29,9 @@ static func save_game(player_data, path: String = SAVE_PATH, active_party_index:
 
 	if not route_state.is_empty():
 		save_data["route_state"] = _serialize_route_state(route_state)
+
+	if not world_state.is_empty():
+		save_data["world_state"] = _serialize_world_state(world_state)
 
 	if party_data.size() == 1:
 		save_data["player_monster"] = party_data[0]
@@ -115,4 +125,26 @@ static func _serialize_route_state(route_state: Dictionary) -> Dictionary:
 			collected_pickups.append(string_id)
 
 	serialized["collected_pickups"] = collected_pickups
+	return serialized
+
+
+static func _serialize_world_state(world_state: Dictionary) -> Dictionary:
+	var serialized := {}
+	var map_path := str(world_state.get("map_path", ""))
+	var player_cell = world_state.get("player_cell", Vector2i.ZERO)
+
+	if not map_path.is_empty():
+		serialized["map_path"] = map_path
+
+	if player_cell is Vector2i:
+		serialized["player_cell"] = {
+			"x": player_cell.x,
+			"y": player_cell.y,
+		}
+	elif player_cell is Dictionary:
+		serialized["player_cell"] = {
+			"x": int(player_cell.get("x", 0)),
+			"y": int(player_cell.get("y", 0)),
+		}
+
 	return serialized

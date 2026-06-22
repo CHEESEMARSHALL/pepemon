@@ -34,7 +34,14 @@ func _run() -> void:
 	saved_second.nickname = "Saved Ripple"
 	saved_second.current_hp = 21
 
-	if not save_manager_script.save_game([saved_monster, saved_second], TEST_SAVE_PATH, 1, {"potion": 1, "capture_capsule": 4}, {"defeated_trainers": ["trainer_rook"], "collected_pickups": ["route1_potion"]}):
+	if not save_manager_script.save_game(
+		[saved_monster, saved_second],
+		TEST_SAVE_PATH,
+		1,
+		{"potion": 1, "capture_capsule": 4},
+		{"defeated_trainers": ["trainer_rook"], "collected_pickups": ["route1_potion"]},
+		{"map_path": "res://data/overworld/Route2.tres", "player_cell": Vector2i(7, 8)}
+	):
 		push_error("Could not prepare save data for GameManager load validation.")
 		quit(1)
 		return
@@ -70,6 +77,20 @@ func _run() -> void:
 
 	if not loaded_route_state.get("collected_pickups", []).has("route1_potion"):
 		push_error("GameManager did not load collected pickup route state.")
+		quit(1)
+		return
+
+	var scene_root := game_root.get_node("%SceneRoot")
+	var overworld := scene_root.get_child(0)
+	var loaded_map = overworld.get("map_data")
+
+	if loaded_map == null or loaded_map.map_name != "Pepemon Route 2":
+		push_error("GameManager did not load the saved overworld route.")
+		quit(1)
+		return
+
+	if not overworld.has_method("get_player_cell") or overworld.call("get_player_cell") != Vector2i(7, 8):
+		push_error("GameManager did not place the player at the saved overworld cell.")
 		quit(1)
 		return
 
