@@ -55,5 +55,25 @@ func _run() -> void:
 		quit(1)
 		return
 
-	print("Overworld interaction validation passed: sign dialogue opens, locks, and closes.")
+	var position_before_npc_step := player.global_position
+	Input.action_press("ui_up")
+	await process_frame
+	await create_timer(player.move_time + 0.05).timeout
+	Input.action_release("ui_up")
+	await process_frame
+
+	if not player.global_position.is_equal_approx(position_before_npc_step):
+		push_error("Blocked NPC tile allowed the player to move into it.")
+		quit(1)
+		return
+
+	player.interact()
+	await process_frame
+
+	if not dialogue_panel.visible or not dialogue_label.text.contains("Scout Mira"):
+		push_error("Facing the NPC did not show NPC dialogue.")
+		quit(1)
+		return
+
+	print("Overworld interaction validation passed: sign and NPC dialogue open, lock, and close.")
 	quit()
