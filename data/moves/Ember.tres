@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="MoveData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/MoveData.gd" id="1_move_data"]
+
+[resource]
+script = ExtResource("1_move_data")
+move_name = "Ember"
+move_type = 1
+power = 40
+max_pp = 25
+accuracy = 1.0

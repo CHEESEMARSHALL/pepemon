@@ -1,0 +1,25 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/player/PlayerController.gd" id="1_player_controller"]
+[ext_resource type="Script" path="res://scenes/overworld/Overworld.gd" id="2_overworld"]
+[ext_resource type="Resource" path="res://data/encounters/StarterGrass.tres" id="3_encounter_table"]
+
+[node name="Overworld" type="Node2D"]
+script = ExtResource("2_overworld")
+
+[node name="GroundTileMap" type="TileMap" parent="."]
+unique_name_in_owner = true
+
+[node name="Player" type="CharacterBody2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(128, 128)
+script = ExtResource("1_player_controller")
+tile_map_path = NodePath("../GroundTileMap")
+encounter_table = ExtResource("3_encounter_table")
+
+[node name="HintLabel" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 584.0
+offset_bottom = 72.0
+text = "Test Map: walk into grass to trigger encounters."

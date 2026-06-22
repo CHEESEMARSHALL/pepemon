@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="MonsterData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/MonsterData.gd" id="1_monster_data"]
+[ext_resource type="Resource" path="res://data/moves/Ember.tres" id="2_ember"]
+
+[resource]
+script = ExtResource("1_monster_data")
+monster_name = "Grass Sprout"
+primary_type = 3
+secondary_type = 0
+has_secondary_type = false
+base_hp = 12
+base_attack = 20
+base_defense = 30
+base_speed = 20
+moves = Array[Resource]([ExtResource("2_ember")])
+growth_rate = 1

@@ -1,0 +1,293 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/BattleUI.gd" id="1_battle_ui"]
+[ext_resource type="Script" path="res://scripts/battle/BattleManager.gd" id="2_battle_manager"]
+[ext_resource type="Resource" path="res://data/monsters/FireMonster.tres" id="3_player_monster"]
+[ext_resource type="Resource" path="res://data/monsters/WaterMonster.tres" id="4_enemy_monster"]
+[ext_resource type="Resource" path="res://data/items/Potion.tres" id="5_potion"]
+[ext_resource type="Resource" path="res://data/items/CaptureCapsule.tres" id="6_capture"]
+
+[sub_resource type="Gradient" id="Gradient_bar_under"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(0.12, 0.12, 0.12, 1, 0.22, 0.22, 0.22, 1)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture_bar_under"]
+gradient = SubResource("Gradient_bar_under")
+width = 256
+
+[sub_resource type="Gradient" id="Gradient_bar_progress"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(0.18, 0.78, 0.36, 1, 0.72, 0.95, 0.32, 1)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture_bar_progress"]
+gradient = SubResource("Gradient_bar_progress")
+width = 256
+
+[node name="BattleUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_battle_ui")
+potion_item = ExtResource("5_potion")
+capture_item = ExtResource("6_capture")
+
+[node name="BattleManager" type="Node" parent="."]
+script = ExtResource("2_battle_manager")
+player_monster = ExtResource("3_player_monster")
+enemy_monster = ExtResource("4_enemy_monster")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.09, 0.1, 0.13, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MainLayout" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="EnemyPanel" type="PanelContainer" parent="MarginContainer/MainLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="EnemyStats" type="VBoxContainer" parent="MarginContainer/MainLayout/EnemyPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EnemyNameLabel" type="Label" parent="MarginContainer/MainLayout/EnemyPanel/EnemyStats"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Enemy"
+
+[node name="EnemyHealthBar" type="TextureProgressBar" parent="MarginContainer/MainLayout/EnemyPanel/EnemyStats"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 100.0
+value = 100.0
+texture_under = SubResource("GradientTexture_bar_under")
+texture_progress = SubResource("GradientTexture_bar_progress")
+
+[node name="EnemyHpLabel" type="Label" parent="MarginContainer/MainLayout/EnemyPanel/EnemyStats"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0/0"
+horizontal_alignment = 2
+
+[node name="BattleSpace" type="Control" parent="MarginContainer/MainLayout"]
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PlayerPanel" type="PanelContainer" parent="MarginContainer/MainLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PlayerStats" type="VBoxContainer" parent="MarginContainer/MainLayout/PlayerPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PlayerNameLabel" type="Label" parent="MarginContainer/MainLayout/PlayerPanel/PlayerStats"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Player"
+
+[node name="PlayerHealthBar" type="TextureProgressBar" parent="MarginContainer/MainLayout/PlayerPanel/PlayerStats"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 24)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 100.0
+value = 100.0
+texture_under = SubResource("GradientTexture_bar_under")
+texture_progress = SubResource("GradientTexture_bar_progress")
+
+[node name="PlayerHpLabel" type="Label" parent="MarginContainer/MainLayout/PlayerPanel/PlayerStats"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0/0"
+horizontal_alignment = 2
+
+[node name="BottomPanel" type="HBoxContainer" parent="MarginContainer/MainLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 16
+
+[node name="MessagePanel" type="PanelContainer" parent="MarginContainer/MainLayout/BottomPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MessageLabel" type="Label" parent="MarginContainer/MainLayout/BottomPanel/MessagePanel"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 96)
+layout_mode = 2
+text = "Battle ready."
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="CommandMenu" type="GridContainer" parent="MarginContainer/MainLayout/BottomPanel"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+
+[node name="FightButton" type="Button" parent="MarginContainer/MainLayout/BottomPanel/CommandMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+text = "Fight"
+
+[node name="BagButton" type="Button" parent="MarginContainer/MainLayout/BottomPanel/CommandMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+text = "Bag"
+
+[node name="MonsterButton" type="Button" parent="MarginContainer/MainLayout/BottomPanel/CommandMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+text = "Pokémon"
+
+[node name="RunButton" type="Button" parent="MarginContainer/MainLayout/BottomPanel/CommandMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+text = "Run"
+
+[node name="MoveMenu" type="GridContainer" parent="MarginContainer/MainLayout/BottomPanel"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+
+[node name="MoveButton1" type="Button" parent="MarginContainer/MainLayout/BottomPanel/MoveMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+text = "Move 1"
+
+[node name="MoveButton2" type="Button" parent="MarginContainer/MainLayout/BottomPanel/MoveMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+text = "Move 2"
+
+[node name="MoveButton3" type="Button" parent="MarginContainer/MainLayout/BottomPanel/MoveMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+text = "Move 3"
+
+[node name="MoveButton4" type="Button" parent="MarginContainer/MainLayout/BottomPanel/MoveMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+text = "Move 4"
+
+[node name="MoveButton5" type="Button" parent="MarginContainer/MainLayout/BottomPanel/MoveMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+text = "Move 5"
+
+[node name="MoveButton6" type="Button" parent="MarginContainer/MainLayout/BottomPanel/MoveMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+text = "Move 6"
+
+[node name="BagMenu" type="GridContainer" parent="MarginContainer/MainLayout/BottomPanel"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+columns = 1
+theme_override_constants/v_separation = 8
+
+[node name="PotionButton" type="Button" parent="MarginContainer/MainLayout/BottomPanel/BagMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 44)
+layout_mode = 2
+text = "Potion x3"
+
+[node name="CaptureButton" type="Button" parent="MarginContainer/MainLayout/BottomPanel/BagMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 44)
+layout_mode = 2
+text = "Capture Capsule x3"
+
+[node name="BagBackButton" type="Button" parent="MarginContainer/MainLayout/BottomPanel/BagMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 44)
+layout_mode = 2
+text = "Back"
+
+[node name="PartyMenu" type="GridContainer" parent="MarginContainer/MainLayout/BottomPanel"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+columns = 1
+theme_override_constants/v_separation = 8
+
+[node name="PartyButton1" type="Button" parent="MarginContainer/MainLayout/BottomPanel/PartyMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 38)
+layout_mode = 2
+text = "Party 1"
+
+[node name="PartyButton2" type="Button" parent="MarginContainer/MainLayout/BottomPanel/PartyMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 38)
+layout_mode = 2
+text = "Party 2"
+
+[node name="PartyButton3" type="Button" parent="MarginContainer/MainLayout/BottomPanel/PartyMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 38)
+layout_mode = 2
+text = "Party 3"
+
+[node name="PartyButton4" type="Button" parent="MarginContainer/MainLayout/BottomPanel/PartyMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 38)
+layout_mode = 2
+text = "Party 4"
+
+[node name="PartyButton5" type="Button" parent="MarginContainer/MainLayout/BottomPanel/PartyMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 38)
+layout_mode = 2
+text = "Party 5"
+
+[node name="PartyButton6" type="Button" parent="MarginContainer/MainLayout/BottomPanel/PartyMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 38)
+layout_mode = 2
+text = "Party 6"
+
+[node name="PartyBackButton" type="Button" parent="MarginContainer/MainLayout/BottomPanel/PartyMenu"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 38)
+layout_mode = 2
+text = "Back"

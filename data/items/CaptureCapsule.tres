@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ItemData.gd" id="1_item_data"]
+
+[resource]
+script = ExtResource("1_item_data")
+item_name = "Capture Capsule"
+heal_amount = 0
+capture_rate = 1.0
+usable_in_battle = true

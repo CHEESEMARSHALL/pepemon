@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="MoveData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/MoveData.gd" id="1_move_data"]
+
+[resource]
+script = ExtResource("1_move_data")
+move_name = "Splash Strike"
+move_type = 2
+power = 38
+max_pp = 20
+accuracy = 0.95

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="MonsterData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/MonsterData.gd" id="1_monster_data"]
+[ext_resource type="Resource" path="res://data/moves/Ember.tres" id="2_ember"]
+[ext_resource type="Resource" path="res://data/moves/FlameBurst.tres" id="3_flame_burst"]
+
+[resource]
+script = ExtResource("1_monster_data")
+monster_name = "Emberling"
+primary_type = 1
+secondary_type = 0
+has_secondary_type = false
+base_hp = 39
+base_attack = 52
+base_defense = 43
+base_speed = 65
+moves = Array[Resource]([ExtResource("2_ember")])
+learnset_levels = Array[int]([5])
+learnset_moves = Array[Resource]([ExtResource("3_flame_burst")])
+growth_rate = 1
