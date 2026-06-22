@@ -13,6 +13,8 @@ signal battle_triggered(enemy_monster: Resource, enemy_level: int)
 @export var ground_layer: int = 0
 @export var grass_custom_data_key: String = "terrain"
 @export var grass_custom_data_value: String = "Grass"
+@export var blocked_custom_data_key: String = "blocked"
+@export var block_empty_tiles := true
 
 @export_group("Encounters")
 @export_range(0.0, 1.0, 0.01) var grass_encounter_chance: float = 0.1
@@ -74,6 +76,10 @@ func _get_target_position(direction: Vector2i) -> Vector2:
 	if _tile_map != null:
 		var current_cell := _tile_map.local_to_map(_tile_map.to_local(global_position))
 		var target_cell := current_cell + direction
+
+		if _is_blocked_tile(target_cell):
+			return global_position
+
 		return _tile_map.to_global(_tile_map.map_to_local(target_cell))
 
 	return global_position + Vector2(direction) * fallback_cell_size
@@ -104,6 +110,18 @@ func _is_on_grass_tile() -> bool:
 
 	var tile_value = tile_data.get_custom_data(grass_custom_data_key)
 	return str(tile_value) == grass_custom_data_value
+
+
+func _is_blocked_tile(cell: Vector2i) -> bool:
+	if _tile_map == null:
+		return false
+
+	var tile_data := _tile_map.get_cell_tile_data(ground_layer, cell)
+
+	if tile_data == null:
+		return block_empty_tiles
+
+	return bool(tile_data.get_custom_data(blocked_custom_data_key))
 
 
 func _snap_to_grid() -> void:

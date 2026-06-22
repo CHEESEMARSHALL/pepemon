@@ -163,6 +163,13 @@ func _init() -> void:
 		quit(1)
 		return
 
+	var overworld_collision_script := load("res://scripts/tests/ValidateOverworldCollision.gd") as Script
+
+	if overworld_collision_script == null:
+		push_error("Failed to load ValidateOverworldCollision.gd.")
+		quit(1)
+		return
+
 	var battle_ui = battle_ui_scene.instantiate()
 	get_root().add_child(battle_ui)
 	battle_ui.queue_free()

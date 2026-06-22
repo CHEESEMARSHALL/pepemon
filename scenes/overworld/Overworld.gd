@@ -4,9 +4,12 @@ const CELL_SIZE := Vector2i(16, 16)
 const SOURCE_ID := 0
 const DIRT_TILE := Vector2i(0, 0)
 const GRASS_TILE := Vector2i(1, 0)
+const WALL_TILE := Vector2i(2, 0)
 const TERRAIN_DATA_KEY := "terrain"
+const BLOCKED_DATA_KEY := "blocked"
 const TERRAIN_DIRT := "Dirt"
 const TERRAIN_GRASS := "Grass"
+const TERRAIN_WALL := "Wall"
 
 @onready var _player := %Player as PlayerController
 @onready var _ground_tile_map := %GroundTileMap as TileMap
@@ -33,6 +36,14 @@ func _setup_test_map() -> void:
 		for y in range(5, 12):
 			_ground_tile_map.set_cell(0, Vector2i(x, y), SOURCE_ID, DIRT_TILE)
 
+	for x in range(4, 14):
+		_ground_tile_map.set_cell(0, Vector2i(x, 5), SOURCE_ID, WALL_TILE)
+		_ground_tile_map.set_cell(0, Vector2i(x, 11), SOURCE_ID, WALL_TILE)
+
+	for y in range(5, 12):
+		_ground_tile_map.set_cell(0, Vector2i(4, y), SOURCE_ID, WALL_TILE)
+		_ground_tile_map.set_cell(0, Vector2i(13, y), SOURCE_ID, WALL_TILE)
+
 	for x in range(9, 13):
 		for y in range(7, 11):
 			_ground_tile_map.set_cell(0, Vector2i(x, y), SOURCE_ID, GRASS_TILE)
@@ -44,10 +55,14 @@ func _create_test_tile_set() -> TileSet:
 	tile_set.add_custom_data_layer(0)
 	tile_set.set_custom_data_layer_name(0, TERRAIN_DATA_KEY)
 	tile_set.set_custom_data_layer_type(0, TYPE_STRING)
+	tile_set.add_custom_data_layer(1)
+	tile_set.set_custom_data_layer_name(1, BLOCKED_DATA_KEY)
+	tile_set.set_custom_data_layer_type(1, TYPE_BOOL)
 
-	var image := Image.create(CELL_SIZE.x * 2, CELL_SIZE.y, false, Image.FORMAT_RGBA8)
+	var image := Image.create(CELL_SIZE.x * 3, CELL_SIZE.y, false, Image.FORMAT_RGBA8)
 	image.fill_rect(Rect2i(Vector2i.ZERO, CELL_SIZE), Color(0.45, 0.32, 0.18))
 	image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x, 0), CELL_SIZE), Color(0.18, 0.62, 0.22))
+	image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x * 2, 0), CELL_SIZE), Color(0.18, 0.18, 0.2))
 
 	var texture := ImageTexture.create_from_image(image)
 	var source := TileSetAtlasSource.new()
@@ -55,8 +70,13 @@ func _create_test_tile_set() -> TileSet:
 	source.texture_region_size = CELL_SIZE
 	source.create_tile(DIRT_TILE)
 	source.create_tile(GRASS_TILE)
+	source.create_tile(WALL_TILE)
 
 	tile_set.add_source(source, SOURCE_ID)
 	source.get_tile_data(DIRT_TILE, 0).set_custom_data(TERRAIN_DATA_KEY, TERRAIN_DIRT)
+	source.get_tile_data(DIRT_TILE, 0).set_custom_data(BLOCKED_DATA_KEY, false)
 	source.get_tile_data(GRASS_TILE, 0).set_custom_data(TERRAIN_DATA_KEY, TERRAIN_GRASS)
+	source.get_tile_data(GRASS_TILE, 0).set_custom_data(BLOCKED_DATA_KEY, false)
+	source.get_tile_data(WALL_TILE, 0).set_custom_data(TERRAIN_DATA_KEY, TERRAIN_WALL)
+	source.get_tile_data(WALL_TILE, 0).set_custom_data(BLOCKED_DATA_KEY, true)
 	return tile_set
