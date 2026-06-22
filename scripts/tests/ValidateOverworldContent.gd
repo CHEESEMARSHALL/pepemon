@@ -48,6 +48,14 @@ func _validate_map_data() -> void:
 		push_error("Route1.tres should include multiple authored signs.")
 		quit(1)
 
+	for sign_entry in route_data.sign_messages:
+		var sign_cell: Vector2i = sign_entry.get("cell", Vector2i(-999, -999))
+
+		if route_data.get_tile_code(sign_cell) != "S":
+			push_error("Sign message at %s does not match an authored sign tile." % str(sign_cell))
+			quit(1)
+			return
+
 	var interactable_entries: Array[Dictionary] = route_data.get_interactable_entries()
 
 	if interactable_entries.size() < 4:
@@ -58,8 +66,35 @@ func _validate_map_data() -> void:
 	var trainer_count := 0
 
 	for entry in interactable_entries:
+		var interactable_cell: Vector2i = entry.get("cell", Vector2i(-999, -999))
+
+		if str(entry.get("name", "")).is_empty():
+			push_error("Route1.tres contains an unnamed interactable.")
+			quit(1)
+			return
+
+		if str(entry.get("dialogue", "")).is_empty():
+			push_error("Route1.tres contains an interactable without dialogue.")
+			quit(1)
+			return
+
+		if not route_data.is_inside_map(interactable_cell):
+			push_error("Route1.tres contains an interactable outside the map: %s." % str(interactable_cell))
+			quit(1)
+			return
+
+		if route_data.get_tile_code(interactable_cell) == "#":
+			push_error("Route1.tres places an interactable on a wall tile: %s." % str(interactable_cell))
+			quit(1)
+			return
+
 		if int(entry.get("action", 0)) == 1:
 			trainer_count += 1
+
+			if entry.get("battle_monster", null) == null or int(entry.get("battle_level", 0)) <= 0:
+				push_error("Route1.tres contains a trainer without battle data.")
+				quit(1)
+				return
 
 	if trainer_count < 2:
 		push_error("Route1.tres should include multiple authored trainer battles.")

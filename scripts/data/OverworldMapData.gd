@@ -46,3 +46,7 @@ func get_sign_message(cell: Vector2i) -> String:
 
 func get_interactable_entries() -> Array[Dictionary]:
 	return interactables
+
+
+func is_inside_map(cell: Vector2i) -> bool:
+	return cell.x >= 0 and cell.y >= 0 and cell.x < get_width() and cell.y < get_height()
