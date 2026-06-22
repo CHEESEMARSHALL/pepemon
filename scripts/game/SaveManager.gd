@@ -98,6 +98,7 @@ static func _serialize_inventory(inventory: Dictionary) -> Dictionary:
 static func _serialize_route_state(route_state: Dictionary) -> Dictionary:
 	var serialized := {}
 	var defeated_trainers := []
+	var collected_pickups := []
 
 	for trainer_id in route_state.get("defeated_trainers", []):
 		var string_id := str(trainer_id)
@@ -106,4 +107,12 @@ static func _serialize_route_state(route_state: Dictionary) -> Dictionary:
 			defeated_trainers.append(string_id)
 
 	serialized["defeated_trainers"] = defeated_trainers
+
+	for pickup_id in route_state.get("collected_pickups", []):
+		var string_id := str(pickup_id)
+
+		if not string_id.is_empty() and not collected_pickups.has(string_id):
+			collected_pickups.append(string_id)
+
+	serialized["collected_pickups"] = collected_pickups
 	return serialized

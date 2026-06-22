@@ -4,18 +4,24 @@ class_name OverworldInteractable
 enum InteractionAction {
 	DIALOGUE,
 	BATTLE,
+	PICKUP,
 }
 
 @export var grid_cell := Vector2i.ZERO
 @export var interactable_id := ""
 @export_multiline var dialogue_text := ""
 @export_multiline var defeated_dialogue_text := ""
+@export_multiline var collected_dialogue_text := "There is nothing here."
 @export var blocks_movement := true
 @export var interaction_action := InteractionAction.DIALOGUE
 @export var battle_monster_data: Resource
 @export_range(1, 100, 1) var battle_monster_level := 5
+@export var pickup_item_key := ""
+@export var pickup_item_name := ""
+@export_range(1, 99, 1) var pickup_count := 1
 
 var is_defeated := false
+var is_collected := false
 
 
 func place_on_tile_map(tile_map: TileMap) -> void:
@@ -26,6 +32,9 @@ func place_on_tile_map(tile_map: TileMap) -> void:
 
 
 func get_interaction_text() -> String:
+	if is_collected and not collected_dialogue_text.is_empty():
+		return collected_dialogue_text
+
 	if is_defeated and not defeated_dialogue_text.is_empty():
 		return defeated_dialogue_text
 

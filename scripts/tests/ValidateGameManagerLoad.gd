@@ -34,7 +34,7 @@ func _run() -> void:
 	saved_second.nickname = "Saved Ripple"
 	saved_second.current_hp = 21
 
-	if not save_manager_script.save_game([saved_monster, saved_second], TEST_SAVE_PATH, 1, {"potion": 1, "capture_capsule": 4}, {"defeated_trainers": ["trainer_rook"]}):
+	if not save_manager_script.save_game([saved_monster, saved_second], TEST_SAVE_PATH, 1, {"potion": 1, "capture_capsule": 4}, {"defeated_trainers": ["trainer_rook"], "collected_pickups": ["route1_potion"]}):
 		push_error("Could not prepare save data for GameManager load validation.")
 		quit(1)
 		return
@@ -65,6 +65,11 @@ func _run() -> void:
 
 	if not loaded_route_state.get("defeated_trainers", []).has("trainer_rook"):
 		push_error("GameManager did not load defeated trainer route state.")
+		quit(1)
+		return
+
+	if not loaded_route_state.get("collected_pickups", []).has("route1_potion"):
+		push_error("GameManager did not load collected pickup route state.")
 		quit(1)
 		return
 

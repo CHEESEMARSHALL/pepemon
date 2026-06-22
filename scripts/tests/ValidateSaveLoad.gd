@@ -33,6 +33,7 @@ func _init() -> void:
 	}
 	var route_state := {
 		"defeated_trainers": ["trainer_rook", "trainer_vale"],
+		"collected_pickups": ["route1_potion"],
 	}
 
 	if not save_manager_script.save_game([original, second], TEST_SAVE_PATH, 1, inventory, route_state):
@@ -61,6 +62,11 @@ func _init() -> void:
 
 	if not save_data.has("route_state") or not save_data["route_state"].get("defeated_trainers", []).has("trainer_rook"):
 		push_error("SaveManager failed to save route state.")
+		quit(1)
+		return
+
+	if not save_data["route_state"].get("collected_pickups", []).has("route1_potion"):
+		push_error("SaveManager failed to save collected pickup route state.")
 		quit(1)
 		return
 

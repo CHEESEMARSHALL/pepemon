@@ -138,6 +138,9 @@ func _connect_overworld(scene: Node) -> void:
 	if scene.has_signal("trainer_battle_triggered"):
 		scene.trainer_battle_triggered.connect(_start_trainer_battle)
 
+	if scene.has_signal("pickup_collected"):
+		scene.pickup_collected.connect(_collect_pickup)
+
 
 func toggle_overworld_menu() -> void:
 	if _current_scene == null or _current_scene is BattleUI:
@@ -445,6 +448,7 @@ func _load_inventory_from_save(save_data: Dictionary) -> Dictionary:
 func _load_route_state_from_save(save_data: Dictionary) -> Dictionary:
 	var route_state := {
 		"defeated_trainers": [],
+		"collected_pickups": [],
 	}
 	var raw_route_state = save_data.get("route_state", {})
 
@@ -454,6 +458,12 @@ func _load_route_state_from_save(save_data: Dictionary) -> Dictionary:
 
 			if not string_id.is_empty() and not route_state["defeated_trainers"].has(string_id):
 				route_state["defeated_trainers"].append(string_id)
+
+		for pickup_id in raw_route_state.get("collected_pickups", []):
+			var string_id := str(pickup_id)
+
+			if not string_id.is_empty() and not route_state["collected_pickups"].has(string_id):
+				route_state["collected_pickups"].append(string_id)
 
 	return route_state
 
@@ -568,7 +578,7 @@ func _mark_pending_trainer_defeated() -> void:
 
 
 func _apply_route_state_to_overworld(scene: Node) -> void:
-	if scene == null or not scene.has_method("set_defeated_interactables"):
+	if scene == null:
 		return
 
 	var defeated_ids: Array[String] = []
@@ -576,4 +586,26 @@ func _apply_route_state_to_overworld(scene: Node) -> void:
 	for trainer_id in _route_state.get("defeated_trainers", []):
 		defeated_ids.append(str(trainer_id))
 
-	scene.call("set_defeated_interactables", defeated_ids)
+	if scene.has_method("set_defeated_interactables"):
+		scene.call("set_defeated_interactables", defeated_ids)
+
+	var collected_ids: Array[String] = []
+
+	for pickup_id in _route_state.get("collected_pickups", []):
+		collected_ids.append(str(pickup_id))
+
+	if scene.has_method("set_collected_interactables"):
+		scene.call("set_collected_interactables", collected_ids)
+
+
+func _collect_pickup(pickup_id: String, item_key: String, item_count: int, _item_name: String) -> void:
+	if pickup_id.is_empty() or item_key.is_empty() or item_count <= 0:
+		return
+
+	_inventory[item_key] = maxi(0, int(_inventory.get(item_key, 0))) + item_count
+
+	if not _route_state.has("collected_pickups") or not _route_state["collected_pickups"] is Array:
+		_route_state["collected_pickups"] = []
+
+	if not _route_state["collected_pickups"].has(pickup_id):
+		_route_state["collected_pickups"].append(pickup_id)

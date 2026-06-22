@@ -2,6 +2,9 @@ extends SceneTree
 
 var _battle_monster: Resource
 var _battle_level := 0
+var _pickup_id := ""
+var _pickup_item_key := ""
+var _pickup_item_count := 0
 
 
 func _init() -> void:
@@ -13,7 +16,8 @@ func _run() -> void:
 	await _validate_scene_content()
 	await _validate_grass_encounter_flow()
 	await _validate_game_manager_trainer_state_flow()
-	print("Overworld content validation passed: authored map, collisions, signs, NPCs, trainers, and grass encounters.")
+	await _validate_game_manager_pickup_flow()
+	print("Overworld content validation passed: authored map, collisions, signs, NPCs, trainers, pickups, and grass encounters.")
 	quit()
 
 
@@ -65,6 +69,7 @@ func _validate_map_data() -> void:
 		return
 
 	var trainer_count := 0
+	var pickup_count := 0
 
 	for entry in interactable_entries:
 		var interactable_cell: Vector2i = entry.get("cell", Vector2i(-999, -999))
@@ -97,8 +102,20 @@ func _validate_map_data() -> void:
 				quit(1)
 				return
 
+		if int(entry.get("action", 0)) == 2:
+			pickup_count += 1
+
+			if str(entry.get("item_key", "")).is_empty() or int(entry.get("item_count", 0)) <= 0:
+				push_error("Route1.tres contains a pickup without item data.")
+				quit(1)
+				return
+
 	if trainer_count < 2:
 		push_error("Route1.tres should include multiple authored trainer battles.")
+		quit(1)
+
+	if pickup_count < 2:
+		push_error("Route1.tres should include multiple authored pickups.")
 		quit(1)
 
 
@@ -158,11 +175,18 @@ func _validate_scene_content() -> void:
 	await _close_dialogue(dialogue_panel, player)
 
 	overworld.trainer_battle_triggered.connect(_on_trainer_battle_triggered)
+	overworld.pickup_collected.connect(_on_pickup_collected)
 	await _validate_trainer_interactable(player, tile_map, Vector2i(10, 7), Vector2i.UP, 4)
 	await _validate_trainer_interactable(player, tile_map, Vector2i(11, 10), Vector2i.UP, 5)
 	var defeated_trainers: Array[String] = ["trainer_rook"]
 	overworld.set_defeated_interactables(defeated_trainers)
 	await _validate_defeated_trainer_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(10, 7), Vector2i.UP, "Good match")
+	await _close_dialogue(dialogue_panel, player)
+	await _validate_pickup_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(5, 3), Vector2i.UP, "route1_potion", "potion", 1, "Found a Potion")
+	await _close_dialogue(dialogue_panel, player)
+	var collected_pickups: Array[String] = ["route1_capsules"]
+	overworld.set_collected_interactables(collected_pickups)
+	await _validate_collected_pickup_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(12, 3), Vector2i.UP, "empty")
 	overworld.queue_free()
 
 
@@ -295,6 +319,71 @@ func _validate_game_manager_trainer_state_flow() -> void:
 	game_root.queue_free()
 
 
+func _validate_game_manager_pickup_flow() -> void:
+	var test_save_tools := load("res://scripts/tests/TestSaveTools.gd")
+
+	if test_save_tools != null:
+		test_save_tools.clear_main_save()
+
+	var game_root_scene := load("res://scenes/game/GameRoot.tscn") as PackedScene
+
+	if game_root_scene == null:
+		push_error("Failed to load GameRoot.tscn for pickup validation.")
+		quit(1)
+		return
+
+	var game_root := game_root_scene.instantiate()
+	game_root.auto_load_save = false
+	game_root.auto_save_after_battle = false
+	get_root().add_child(game_root)
+	await process_frame
+	await process_frame
+
+	var scene_root := game_root.get_node("%SceneRoot")
+	var overworld := scene_root.get_child(0)
+	var player := overworld.find_child("Player", true, false) as PlayerController
+	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
+	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
+	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
+
+	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(5, 3)))
+	player.set("_facing_direction", Vector2i.UP)
+	player.interact()
+	await process_frame
+
+	var inventory: Dictionary = game_root.get("_inventory")
+	var route_state: Dictionary = game_root.get("_route_state")
+
+	if int(inventory.get("potion", 0)) < 4:
+		push_error("GameManager did not add the picked-up Potion to inventory.")
+		quit(1)
+		return
+
+	if not route_state.get("collected_pickups", []).has("route1_potion"):
+		push_error("GameManager did not mark the pickup as collected.")
+		quit(1)
+		return
+
+	if not dialogue_panel.visible or not dialogue_label.text.contains("Found a Potion"):
+		push_error("Pickup did not show first-collection dialogue.")
+		quit(1)
+		return
+
+	await _close_dialogue(dialogue_panel, player)
+	player.interact()
+	await process_frame
+
+	if not dialogue_panel.visible or not dialogue_label.text.contains("empty"):
+		push_error("Collected pickup did not show empty dialogue.")
+		quit(1)
+		return
+
+	if test_save_tools != null:
+		test_save_tools.clear_main_save()
+
+	game_root.queue_free()
+
+
 func _instantiate_overworld() -> Node:
 	var overworld_scene := load("res://scenes/overworld/Overworld.tscn") as PackedScene
 
@@ -395,6 +484,63 @@ func _validate_defeated_trainer_dialogue(
 		quit(1)
 
 
+func _validate_pickup_interactable(
+	player: PlayerController,
+	dialogue_panel: PanelContainer,
+	dialogue_label: Label,
+	tile_map: TileMap,
+	start_cell: Vector2i,
+	direction: Vector2i,
+	expected_id: String,
+	expected_item_key: String,
+	expected_count: int,
+	expected_text: String
+) -> void:
+	_pickup_id = ""
+	_pickup_item_key = ""
+	_pickup_item_count = 0
+	player.global_position = tile_map.to_global(tile_map.map_to_local(start_cell))
+	await process_frame
+	player.set("_facing_direction", direction)
+	player.interact()
+	await process_frame
+
+	if _pickup_id != expected_id or _pickup_item_key != expected_item_key or _pickup_item_count != expected_count:
+		push_error("Pickup did not emit the configured item collection.")
+		quit(1)
+		return
+
+	if not dialogue_panel.visible or not dialogue_label.text.contains(expected_text):
+		push_error("Pickup did not show collection dialogue.")
+		quit(1)
+
+
+func _validate_collected_pickup_dialogue(
+	player: PlayerController,
+	dialogue_panel: PanelContainer,
+	dialogue_label: Label,
+	tile_map: TileMap,
+	start_cell: Vector2i,
+	direction: Vector2i,
+	expected_text: String
+) -> void:
+	_pickup_id = ""
+	player.global_position = tile_map.to_global(tile_map.map_to_local(start_cell))
+	await process_frame
+	player.set("_facing_direction", direction)
+	player.interact()
+	await process_frame
+
+	if not _pickup_id.is_empty():
+		push_error("Collected pickup emitted another collection.")
+		quit(1)
+		return
+
+	if not dialogue_panel.visible or not dialogue_label.text.contains(expected_text):
+		push_error("Collected pickup did not show empty dialogue.")
+		quit(1)
+
+
 func _step_player(direction: Vector2i, move_time: float) -> void:
 	_release_all_directions()
 	_press_direction(direction)
@@ -448,3 +594,9 @@ func _close_dialogue(dialogue_panel: PanelContainer, player: PlayerController) -
 func _on_trainer_battle_triggered(_trainer_id: String, enemy_monster: Resource, enemy_level: int) -> void:
 	_battle_monster = enemy_monster
 	_battle_level = enemy_level
+
+
+func _on_pickup_collected(pickup_id: String, item_key: String, item_count: int, _item_name: String) -> void:
+	_pickup_id = pickup_id
+	_pickup_item_key = item_key
+	_pickup_item_count = item_count

@@ -2,6 +2,7 @@ extends Node2D
 
 signal battle_triggered(enemy_monster: Resource, enemy_level: int)
 signal trainer_battle_triggered(trainer_id: String, enemy_monster: Resource, enemy_level: int)
+signal pickup_collected(pickup_id: String, item_key: String, item_count: int, item_name: String)
 
 @export var map_data: Resource
 @export var interactable_scene: PackedScene
@@ -30,6 +31,7 @@ const TERRAIN_NPC := "NPC"
 
 var _interactables_by_cell: Dictionary = {}
 var _defeated_interactable_ids: Array[String] = []
+var _collected_interactable_ids: Array[String] = []
 
 
 func _ready() -> void:
@@ -161,11 +163,16 @@ func _spawn_interactables_from_map_data() -> void:
 		interactable.grid_cell = entry.get("cell", Vector2i.ZERO)
 		interactable.dialogue_text = str(entry.get("dialogue", ""))
 		interactable.defeated_dialogue_text = str(entry.get("defeated_dialogue", ""))
+		interactable.collected_dialogue_text = str(entry.get("collected_dialogue", interactable.collected_dialogue_text))
 		interactable.blocks_movement = bool(entry.get("blocks_movement", true))
 		interactable.interaction_action = int(entry.get("action", 0))
 		interactable.battle_monster_data = entry.get("battle_monster", null)
 		interactable.battle_monster_level = int(entry.get("battle_level", 5))
+		interactable.pickup_item_key = str(entry.get("item_key", ""))
+		interactable.pickup_item_name = str(entry.get("item_name", ""))
+		interactable.pickup_count = int(entry.get("item_count", 1))
 		interactable.is_defeated = _defeated_interactable_ids.has(interactable.interactable_id)
+		interactable.is_collected = _collected_interactable_ids.has(interactable.interactable_id)
 		_interactables.add_child(interactable)
 
 
@@ -213,6 +220,27 @@ func _handle_interactable(interactable: Node) -> void:
 		trainer_battle_triggered.emit(str(interactable.get("interactable_id")), interactable.battle_monster_data, int(interactable.battle_monster_level))
 		return
 
+	if action == 2:
+		if bool(interactable.get("is_collected")):
+			if interactable.has_method("get_interaction_text") and not interactable.get_interaction_text().is_empty():
+				_show_dialogue(interactable.get_interaction_text())
+
+			return
+
+		var pickup_message: String = interactable.get_interaction_text()
+		interactable.is_collected = true
+		if not _collected_interactable_ids.has(str(interactable.get("interactable_id"))):
+			_collected_interactable_ids.append(str(interactable.get("interactable_id")))
+
+		pickup_collected.emit(
+			str(interactable.get("interactable_id")),
+			str(interactable.get("pickup_item_key")),
+			int(interactable.get("pickup_count")),
+			str(interactable.get("pickup_item_name"))
+		)
+		_show_dialogue(pickup_message)
+		return
+
 	if interactable.has_method("get_interaction_text") and not interactable.get_interaction_text().is_empty():
 		_show_dialogue(interactable.get_interaction_text())
 
@@ -234,3 +262,11 @@ func set_defeated_interactables(defeated_ids: Array[String]) -> void:
 	for interactable in _interactables_by_cell.values():
 		if interactable != null:
 			interactable.is_defeated = _defeated_interactable_ids.has(str(interactable.get("interactable_id")))
+
+
+func set_collected_interactables(collected_ids: Array[String]) -> void:
+	_collected_interactable_ids = collected_ids.duplicate()
+
+	for interactable in _interactables_by_cell.values():
+		if interactable != null:
+			interactable.is_collected = _collected_interactable_ids.has(str(interactable.get("interactable_id")))
