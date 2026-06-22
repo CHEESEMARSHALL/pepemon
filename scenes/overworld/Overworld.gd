@@ -1,6 +1,7 @@
 extends Node2D
 
 signal battle_triggered(enemy_monster: Resource, enemy_level: int)
+signal trainer_battle_triggered(trainer_id: String, enemy_monster: Resource, enemy_level: int)
 
 @export var map_data: Resource
 @export var interactable_scene: PackedScene
@@ -28,6 +29,7 @@ const TERRAIN_NPC := "NPC"
 @onready var _interactables := %Interactables as Node2D
 
 var _interactables_by_cell: Dictionary = {}
+var _defeated_interactable_ids: Array[String] = []
 
 
 func _ready() -> void:
@@ -155,12 +157,15 @@ func _spawn_interactables_from_map_data() -> void:
 
 		var interactable := interactable_scene.instantiate()
 		interactable.name = str(entry.get("name", "Interactable"))
+		interactable.interactable_id = str(entry.get("id", interactable.name))
 		interactable.grid_cell = entry.get("cell", Vector2i.ZERO)
 		interactable.dialogue_text = str(entry.get("dialogue", ""))
+		interactable.defeated_dialogue_text = str(entry.get("defeated_dialogue", ""))
 		interactable.blocks_movement = bool(entry.get("blocks_movement", true))
 		interactable.interaction_action = int(entry.get("action", 0))
 		interactable.battle_monster_data = entry.get("battle_monster", null)
 		interactable.battle_monster_level = int(entry.get("battle_level", 5))
+		interactable.is_defeated = _defeated_interactable_ids.has(interactable.interactable_id)
 		_interactables.add_child(interactable)
 
 
@@ -199,7 +204,13 @@ func _handle_interactable(interactable: Node) -> void:
 		action = int(interactable.get_interaction_action())
 
 	if action == 1:
-		battle_triggered.emit(interactable.battle_monster_data, int(interactable.battle_monster_level))
+		if bool(interactable.get("is_defeated")):
+			if interactable.has_method("get_interaction_text") and not interactable.get_interaction_text().is_empty():
+				_show_dialogue(interactable.get_interaction_text())
+
+			return
+
+		trainer_battle_triggered.emit(str(interactable.get("interactable_id")), interactable.battle_monster_data, int(interactable.battle_monster_level))
 		return
 
 	if interactable.has_method("get_interaction_text") and not interactable.get_interaction_text().is_empty():
@@ -215,3 +226,11 @@ func _show_dialogue(message: String) -> void:
 func close_dialogue() -> void:
 	_dialogue_panel.visible = false
 	_player.movement_enabled = true
+
+
+func set_defeated_interactables(defeated_ids: Array[String]) -> void:
+	_defeated_interactable_ids = defeated_ids.duplicate()
+
+	for interactable in _interactables_by_cell.values():
+		if interactable != null:
+			interactable.is_defeated = _defeated_interactable_ids.has(str(interactable.get("interactable_id")))

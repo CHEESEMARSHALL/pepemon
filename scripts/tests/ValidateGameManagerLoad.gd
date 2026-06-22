@@ -34,7 +34,7 @@ func _run() -> void:
 	saved_second.nickname = "Saved Ripple"
 	saved_second.current_hp = 21
 
-	if not save_manager_script.save_game([saved_monster, saved_second], TEST_SAVE_PATH, 1, {"potion": 1, "capture_capsule": 4}):
+	if not save_manager_script.save_game([saved_monster, saved_second], TEST_SAVE_PATH, 1, {"potion": 1, "capture_capsule": 4}, {"defeated_trainers": ["trainer_rook"]}):
 		push_error("Could not prepare save data for GameManager load validation.")
 		quit(1)
 		return
@@ -46,6 +46,7 @@ func _run() -> void:
 	var loaded_monster = game_root.get("_player_monster")
 	var loaded_party: Array = game_root.get("_player_party")
 	var loaded_inventory: Dictionary = game_root.get("_inventory")
+	var loaded_route_state: Dictionary = game_root.get("_route_state")
 
 	if loaded_monster == null or loaded_monster.nickname != "Saved Ripple" or loaded_monster.level != 6 or loaded_monster.current_hp != 21:
 		push_error("GameManager did not load saved player monster data.")
@@ -59,6 +60,11 @@ func _run() -> void:
 
 	if int(loaded_inventory.get("potion", -1)) != 1 or int(loaded_inventory.get("capture_capsule", -1)) != 4:
 		push_error("GameManager did not load saved inventory counts.")
+		quit(1)
+		return
+
+	if not loaded_route_state.get("defeated_trainers", []).has("trainer_rook"):
+		push_error("GameManager did not load defeated trainer route state.")
 		quit(1)
 		return
 

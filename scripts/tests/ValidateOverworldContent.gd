@@ -12,6 +12,7 @@ func _run() -> void:
 	_validate_map_data()
 	await _validate_scene_content()
 	await _validate_grass_encounter_flow()
+	await _validate_game_manager_trainer_state_flow()
 	print("Overworld content validation passed: authored map, collisions, signs, NPCs, trainers, and grass encounters.")
 	quit()
 
@@ -156,9 +157,12 @@ func _validate_scene_content() -> void:
 	await _validate_blocked_dialogue_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(6, 9), Vector2i.DOWN, "Keeper Sol")
 	await _close_dialogue(dialogue_panel, player)
 
-	overworld.battle_triggered.connect(_on_battle_triggered)
+	overworld.trainer_battle_triggered.connect(_on_trainer_battle_triggered)
 	await _validate_trainer_interactable(player, tile_map, Vector2i(10, 7), Vector2i.UP, 4)
 	await _validate_trainer_interactable(player, tile_map, Vector2i(11, 10), Vector2i.UP, 5)
+	var defeated_trainers: Array[String] = ["trainer_rook"]
+	overworld.set_defeated_interactables(defeated_trainers)
+	await _validate_defeated_trainer_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(10, 7), Vector2i.UP, "Good match")
 	overworld.queue_free()
 
 
@@ -207,6 +211,81 @@ func _validate_grass_encounter_flow() -> void:
 
 	if battle_manager == null or battle_manager.get("_enemy_instance") == null:
 		push_error("Authored grass encounter did not create an enemy monster instance.")
+		quit(1)
+		return
+
+	if test_save_tools != null:
+		test_save_tools.clear_main_save()
+
+	game_root.queue_free()
+
+
+func _validate_game_manager_trainer_state_flow() -> void:
+	var test_save_tools := load("res://scripts/tests/TestSaveTools.gd")
+
+	if test_save_tools != null:
+		test_save_tools.clear_main_save()
+
+	var game_root_scene := load("res://scenes/game/GameRoot.tscn") as PackedScene
+
+	if game_root_scene == null:
+		push_error("Failed to load GameRoot.tscn for trainer state validation.")
+		quit(1)
+		return
+
+	var game_root := game_root_scene.instantiate()
+	game_root.auto_load_save = false
+	game_root.auto_save_after_battle = false
+	get_root().add_child(game_root)
+	await process_frame
+	await process_frame
+
+	var scene_root := game_root.get_node("%SceneRoot")
+	var overworld := scene_root.get_child(0)
+	var player := overworld.find_child("Player", true, false) as PlayerController
+	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
+
+	if player == null or tile_map == null:
+		push_error("Trainer state validation could not find overworld player.")
+		quit(1)
+		return
+
+	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(10, 7)))
+	player.set("_facing_direction", Vector2i.UP)
+	player.interact()
+	await process_frame
+	await process_frame
+
+	var active_scene := scene_root.get_child(0)
+
+	if active_scene == null or not active_scene is BattleUI:
+		push_error("Trainer interaction did not transition to BattleUI through GameManager.")
+		quit(1)
+		return
+
+	game_root.call("_on_battle_finished", true)
+	await process_frame
+	await process_frame
+
+	var route_state: Dictionary = game_root.get("_route_state")
+
+	if not route_state.get("defeated_trainers", []).has("trainer_rook"):
+		push_error("GameManager did not mark the defeated trainer in route state.")
+		quit(1)
+		return
+
+	overworld = scene_root.get_child(0)
+	player = overworld.find_child("Player", true, false) as PlayerController
+	tile_map = overworld.get_node("%GroundTileMap") as TileMap
+	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
+	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
+	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(10, 7)))
+	player.set("_facing_direction", Vector2i.UP)
+	player.interact()
+	await process_frame
+
+	if not dialogue_panel.visible or not dialogue_label.text.contains("Good match"):
+		push_error("Returned overworld did not apply defeated trainer post-battle dialogue.")
 		quit(1)
 		return
 
@@ -289,6 +368,33 @@ func _validate_trainer_interactable(player: PlayerController, tile_map: TileMap,
 		quit(1)
 
 
+func _validate_defeated_trainer_dialogue(
+	player: PlayerController,
+	dialogue_panel: PanelContainer,
+	dialogue_label: Label,
+	tile_map: TileMap,
+	start_cell: Vector2i,
+	direction: Vector2i,
+	expected_text: String
+) -> void:
+	_battle_monster = null
+	_battle_level = 0
+	player.global_position = tile_map.to_global(tile_map.map_to_local(start_cell))
+	await process_frame
+	player.set("_facing_direction", direction)
+	player.interact()
+	await process_frame
+
+	if _battle_monster != null:
+		push_error("Defeated trainer requested another battle.")
+		quit(1)
+		return
+
+	if not dialogue_panel.visible or not dialogue_label.text.contains(expected_text):
+		push_error("Defeated trainer did not show post-battle dialogue.")
+		quit(1)
+
+
 func _step_player(direction: Vector2i, move_time: float) -> void:
 	_release_all_directions()
 	_press_direction(direction)
@@ -339,6 +445,6 @@ func _close_dialogue(dialogue_panel: PanelContainer, player: PlayerController) -
 		quit(1)
 
 
-func _on_battle_triggered(enemy_monster: Resource, enemy_level: int) -> void:
+func _on_trainer_battle_triggered(_trainer_id: String, enemy_monster: Resource, enemy_level: int) -> void:
 	_battle_monster = enemy_monster
 	_battle_level = enemy_level

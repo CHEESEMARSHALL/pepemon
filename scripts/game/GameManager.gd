@@ -37,8 +37,10 @@ const SaveManagerScript := preload("res://scripts/game/SaveManager.gd")
 var _player_monster: Resource
 var _player_party: Array[Resource] = []
 var _inventory := {}
+var _route_state := {}
 var _current_scene: Node
 var _active_menu_tab := "party"
+var _pending_trainer_id := ""
 
 
 func _ready() -> void:
@@ -63,6 +65,7 @@ func show_overworld() -> void:
 
 	_current_scene = overworld_scene.instantiate()
 	_scene_root.add_child(_current_scene)
+	_apply_route_state_to_overworld(_current_scene)
 	_connect_overworld(_current_scene)
 
 
@@ -132,6 +135,9 @@ func _connect_overworld(scene: Node) -> void:
 	if scene.has_signal("battle_triggered"):
 		scene.battle_triggered.connect(start_battle)
 
+	if scene.has_signal("trainer_battle_triggered"):
+		scene.trainer_battle_triggered.connect(_start_trainer_battle)
+
 
 func toggle_overworld_menu() -> void:
 	if _current_scene == null or _current_scene is BattleUI:
@@ -167,8 +173,13 @@ func _on_battle_finished(_player_won: bool) -> void:
 	_sync_party_from_battle()
 	_sync_inventory_from_battle()
 
+	if _player_won:
+		_mark_pending_trainer_defeated()
+	else:
+		_pending_trainer_id = ""
+
 	if auto_save_after_battle:
-		SaveManagerScript.save_game(_player_party, SaveManagerScript.SAVE_PATH, _get_active_party_index(), _inventory)
+		SaveManagerScript.save_game(_player_party, SaveManagerScript.SAVE_PATH, _get_active_party_index(), _inventory, _route_state)
 
 	show_overworld()
 
@@ -178,7 +189,9 @@ func _on_battle_escaped() -> void:
 	_sync_inventory_from_battle()
 
 	if auto_save_after_battle:
-		SaveManagerScript.save_game(_player_party, SaveManagerScript.SAVE_PATH, _get_active_party_index(), _inventory)
+		SaveManagerScript.save_game(_player_party, SaveManagerScript.SAVE_PATH, _get_active_party_index(), _inventory, _route_state)
+
+	_pending_trainer_id = ""
 
 	show_overworld()
 
@@ -232,7 +245,7 @@ func _refresh_overworld_menu() -> void:
 
 
 func _save_from_menu() -> void:
-	if SaveManagerScript.save_game(_player_party, SaveManagerScript.SAVE_PATH, _get_active_party_index(), _inventory):
+	if SaveManagerScript.save_game(_player_party, SaveManagerScript.SAVE_PATH, _get_active_party_index(), _inventory, _route_state):
 		_menu_title_label.text = "Saved"
 		_menu_content_label.text = "Progress saved."
 
@@ -346,6 +359,7 @@ func _load_player_monster() -> bool:
 
 	_player_party = loaded_party
 	_inventory = _load_inventory_from_save(save_data)
+	_route_state = _load_route_state_from_save(save_data)
 	var active_index := clampi(int(save_data.get("active_party_index", 0)), 0, _player_party.size() - 1)
 	_player_monster = _player_party[active_index]
 	return true
@@ -426,6 +440,22 @@ func _get_default_inventory() -> Dictionary:
 
 func _load_inventory_from_save(save_data: Dictionary) -> Dictionary:
 	return _sanitize_inventory(save_data.get("inventory", _get_default_inventory()))
+
+
+func _load_route_state_from_save(save_data: Dictionary) -> Dictionary:
+	var route_state := {
+		"defeated_trainers": [],
+	}
+	var raw_route_state = save_data.get("route_state", {})
+
+	if raw_route_state is Dictionary:
+		for trainer_id in raw_route_state.get("defeated_trainers", []):
+			var string_id := str(trainer_id)
+
+			if not string_id.is_empty() and not route_state["defeated_trainers"].has(string_id):
+				route_state["defeated_trainers"].append(string_id)
+
+	return route_state
 
 
 func _sanitize_inventory(raw_inventory) -> Dictionary:
@@ -517,3 +547,33 @@ func _get_active_party_index() -> int:
 			return index
 
 	return 0
+
+
+func _start_trainer_battle(trainer_id: String, enemy_monster_data: Resource, enemy_level: int = 5) -> void:
+	_pending_trainer_id = trainer_id
+	start_battle(enemy_monster_data, enemy_level)
+
+
+func _mark_pending_trainer_defeated() -> void:
+	if _pending_trainer_id.is_empty():
+		return
+
+	if not _route_state.has("defeated_trainers") or not _route_state["defeated_trainers"] is Array:
+		_route_state["defeated_trainers"] = []
+
+	if not _route_state["defeated_trainers"].has(_pending_trainer_id):
+		_route_state["defeated_trainers"].append(_pending_trainer_id)
+
+	_pending_trainer_id = ""
+
+
+func _apply_route_state_to_overworld(scene: Node) -> void:
+	if scene == null or not scene.has_method("set_defeated_interactables"):
+		return
+
+	var defeated_ids: Array[String] = []
+
+	for trainer_id in _route_state.get("defeated_trainers", []):
+		defeated_ids.append(str(trainer_id))
+
+	scene.call("set_defeated_interactables", defeated_ids)

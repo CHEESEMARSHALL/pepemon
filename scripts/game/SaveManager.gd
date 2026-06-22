@@ -4,7 +4,7 @@ class_name SaveManager
 const SAVE_PATH := "user://savegame.json"
 
 
-static func save_game(player_data, path: String = SAVE_PATH, active_party_index: int = 0, inventory: Dictionary = {}) -> bool:
+static func save_game(player_data, path: String = SAVE_PATH, active_party_index: int = 0, inventory: Dictionary = {}, route_state: Dictionary = {}) -> bool:
 	var party_data := _serialize_party(player_data)
 
 	if party_data.is_empty():
@@ -12,13 +12,16 @@ static func save_game(player_data, path: String = SAVE_PATH, active_party_index:
 		return false
 
 	var save_data := {
-		"version": 3,
+		"version": 4,
 		"player_party": party_data,
 		"active_party_index": clampi(active_party_index, 0, party_data.size() - 1),
 	}
 
 	if not inventory.is_empty():
 		save_data["inventory"] = _serialize_inventory(inventory)
+
+	if not route_state.is_empty():
+		save_data["route_state"] = _serialize_route_state(route_state)
 
 	if party_data.size() == 1:
 		save_data["player_monster"] = party_data[0]
@@ -89,4 +92,18 @@ static func _serialize_inventory(inventory: Dictionary) -> Dictionary:
 	for key in inventory.keys():
 		serialized[str(key)] = max(0, int(inventory[key]))
 
+	return serialized
+
+
+static func _serialize_route_state(route_state: Dictionary) -> Dictionary:
+	var serialized := {}
+	var defeated_trainers := []
+
+	for trainer_id in route_state.get("defeated_trainers", []):
+		var string_id := str(trainer_id)
+
+		if not string_id.is_empty() and not defeated_trainers.has(string_id):
+			defeated_trainers.append(string_id)
+
+	serialized["defeated_trainers"] = defeated_trainers
 	return serialized
