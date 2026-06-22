@@ -170,6 +170,13 @@ func _init() -> void:
 		quit(1)
 		return
 
+	var overworld_interaction_script := load("res://scripts/tests/ValidateOverworldInteraction.gd") as Script
+
+	if overworld_interaction_script == null:
+		push_error("Failed to load ValidateOverworldInteraction.gd.")
+		quit(1)
+		return
+
 	var battle_ui = battle_ui_scene.instantiate()
 	get_root().add_child(battle_ui)
 	battle_ui.queue_free()

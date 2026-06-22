@@ -2,6 +2,7 @@ extends CharacterBody2D
 class_name PlayerController
 
 signal battle_triggered(enemy_monster: Resource, enemy_level: int)
+signal interaction_requested(cell: Vector2i)
 
 @export_group("Movement")
 @export var movement_enabled := true
@@ -21,6 +22,7 @@ signal battle_triggered(enemy_monster: Resource, enemy_level: int)
 @export var encounter_table: Resource
 
 var _is_moving := false
+var _facing_direction := Vector2i.LEFT
 var _rng := RandomNumberGenerator.new()
 
 @onready var _tile_map := get_node_or_null(tile_map_path) as TileMap
@@ -47,7 +49,25 @@ func _process(_delta: float) -> void:
 	if direction == Vector2i.ZERO:
 		return
 
+	_facing_direction = direction
 	_step(direction)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not movement_enabled or _is_moving:
+		return
+
+	if event.is_action_pressed("ui_accept"):
+		interact()
+		get_viewport().set_input_as_handled()
+
+
+func interact() -> void:
+	if _tile_map == null:
+		return
+
+	var current_cell := _tile_map.local_to_map(_tile_map.to_local(global_position))
+	interaction_requested.emit(current_cell + _facing_direction)
 
 
 func _get_input_direction() -> Vector2i:
