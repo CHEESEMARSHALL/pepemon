@@ -156,31 +156,10 @@ func _init() -> void:
 		quit(1)
 		return
 
-	var grass_encounter_flow_script := load("res://scripts/tests/ValidateGrassEncounterFlow.gd") as Script
+	var overworld_content_script := load("res://scripts/tests/ValidateOverworldContent.gd") as Script
 
-	if grass_encounter_flow_script == null:
-		push_error("Failed to load ValidateGrassEncounterFlow.gd.")
-		quit(1)
-		return
-
-	var overworld_collision_script := load("res://scripts/tests/ValidateOverworldCollision.gd") as Script
-
-	if overworld_collision_script == null:
-		push_error("Failed to load ValidateOverworldCollision.gd.")
-		quit(1)
-		return
-
-	var overworld_interaction_script := load("res://scripts/tests/ValidateOverworldInteraction.gd") as Script
-
-	if overworld_interaction_script == null:
-		push_error("Failed to load ValidateOverworldInteraction.gd.")
-		quit(1)
-		return
-
-	var trainer_interaction_script := load("res://scripts/tests/ValidateTrainerInteraction.gd") as Script
-
-	if trainer_interaction_script == null:
-		push_error("Failed to load ValidateTrainerInteraction.gd.")
+	if overworld_content_script == null:
+		push_error("Failed to load ValidateOverworldContent.gd.")
 		quit(1)
 		return
 

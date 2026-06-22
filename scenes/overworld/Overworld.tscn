@@ -1,13 +1,15 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/PlayerController.gd" id="1_player_controller"]
 [ext_resource type="Script" path="res://scenes/overworld/Overworld.gd" id="2_overworld"]
 [ext_resource type="Resource" path="res://data/encounters/StarterGrass.tres" id="3_encounter_table"]
 [ext_resource type="PackedScene" path="res://scenes/overworld/NpcInteractable.tscn" id="4_npc_interactable"]
 [ext_resource type="Resource" path="res://data/monsters/WaterMonster.tres" id="5_trainer_monster"]
+[ext_resource type="Resource" path="res://data/overworld/Route1.tres" id="6_route_1"]
 
 [node name="Overworld" type="Node2D"]
 script = ExtResource("2_overworld")
+map_data = ExtResource("6_route_1")
 
 [node name="GroundTileMap" type="TileMap" parent="."]
 unique_name_in_owner = true
@@ -34,6 +36,11 @@ unique_name_in_owner = true
 grid_cell = Vector2i(8, 7)
 dialogue_text = "Scout Mira: Monsters get faster as they level up."
 
+[node name="KeeperSol" parent="Interactables" instance=ExtResource("4_npc_interactable")]
+unique_name_in_owner = true
+grid_cell = Vector2i(6, 10)
+dialogue_text = "Keeper Sol: Every route has its own encounter table."
+
 [node name="TrainerRook" parent="Interactables" instance=ExtResource("4_npc_interactable")]
 unique_name_in_owner = true
 grid_cell = Vector2i(10, 6)
@@ -41,6 +48,14 @@ dialogue_text = "Rook: Let's test your team."
 interaction_action = 1
 battle_monster_data = ExtResource("5_trainer_monster")
 battle_monster_level = 4
+
+[node name="TrainerVale" parent="Interactables" instance=ExtResource("4_npc_interactable")]
+unique_name_in_owner = true
+grid_cell = Vector2i(11, 9)
+dialogue_text = "Vale: My water partner is ready."
+interaction_action = 1
+battle_monster_data = ExtResource("5_trainer_monster")
+battle_monster_level = 5
 
 [node name="DialogueLayer" type="CanvasLayer" parent="."]
 

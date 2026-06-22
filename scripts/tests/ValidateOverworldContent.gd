@@ -1,0 +1,292 @@
+extends SceneTree
+
+var _battle_monster: Resource
+var _battle_level := 0
+
+
+func _init() -> void:
+	call_deferred("_run")
+
+
+func _run() -> void:
+	_validate_map_data()
+	await _validate_scene_content()
+	await _validate_grass_encounter_flow()
+	print("Overworld content validation passed: authored map, collisions, signs, NPCs, trainers, and grass encounters.")
+	quit()
+
+
+func _validate_map_data() -> void:
+	var route_data = load("res://data/overworld/Route1.tres")
+
+	if route_data == null:
+		push_error("Failed to load Route1.tres.")
+		quit(1)
+		return
+
+	if route_data.map_name != "Pepemon Route 1":
+		push_error("Route1.tres has the wrong map name.")
+		quit(1)
+		return
+
+	if route_data.player_start_cell != Vector2i(8, 8):
+		push_error("Route1.tres has the wrong player start cell.")
+		quit(1)
+		return
+
+	if route_data.get_tile_code(Vector2i(9, 8)) != "G":
+		push_error("Route1.tres does not place grass east of the player start.")
+		quit(1)
+		return
+
+	if route_data.get_sign_message(Vector2i(7, 8)).is_empty():
+		push_error("Route1.tres is missing the route sign message.")
+		quit(1)
+		return
+
+	if route_data.get_sign_message(Vector2i(5, 6)).is_empty() or route_data.get_sign_message(Vector2i(12, 10)).is_empty():
+		push_error("Route1.tres should include multiple authored signs.")
+		quit(1)
+
+
+func _validate_scene_content() -> void:
+	var overworld := await _instantiate_overworld()
+	var player := overworld.find_child("Player", true, false) as PlayerController
+	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
+	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
+	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
+
+	if player == null or tile_map == null or dialogue_panel == null or dialogue_label == null:
+		push_error("Overworld content validation could not find required scene nodes.")
+		quit(1)
+		return
+
+	player.grass_encounter_chance = 0.0
+	var start_cell := tile_map.local_to_map(tile_map.to_local(player.global_position))
+
+	if start_cell != Vector2i(8, 8):
+		push_error("Expected player to start on cell (8, 8), got %s." % str(start_cell))
+		quit(1)
+		return
+
+	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(5, 8)))
+	await process_frame
+
+	var before_wall_step := player.global_position
+	var blocked_target: Vector2 = player.call("_get_target_position", Vector2i.LEFT)
+
+	if not blocked_target.is_equal_approx(before_wall_step):
+		push_error("Authored wall tile returned a movement target.")
+		quit(1)
+		return
+
+	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(8, 8)))
+	await process_frame
+	var grass_target: Vector2 = player.call("_get_target_position", Vector2i.RIGHT)
+	var grass_cell := tile_map.local_to_map(tile_map.to_local(grass_target))
+
+	if grass_cell != Vector2i(9, 8):
+		push_error("Authored grass tile did not return a valid movement target.")
+		quit(1)
+		return
+
+	player.interact()
+	await process_frame
+
+	if not dialogue_panel.visible or not dialogue_label.text.contains("Pepemon Route 1"):
+		push_error("Route sign did not show dialogue.")
+		quit(1)
+		return
+
+	await _close_dialogue(dialogue_panel, player)
+	await _validate_blocked_dialogue_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(8, 8), Vector2i.UP, "Scout Mira")
+	await _close_dialogue(dialogue_panel, player)
+	await _validate_blocked_dialogue_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(6, 9), Vector2i.DOWN, "Keeper Sol")
+	await _close_dialogue(dialogue_panel, player)
+
+	overworld.battle_triggered.connect(_on_battle_triggered)
+	await _validate_trainer_interactable(player, tile_map, Vector2i(10, 7), Vector2i.UP, 4)
+	await _validate_trainer_interactable(player, tile_map, Vector2i(11, 10), Vector2i.UP, 5)
+	overworld.queue_free()
+
+
+func _validate_grass_encounter_flow() -> void:
+	var test_save_tools := load("res://scripts/tests/TestSaveTools.gd")
+
+	if test_save_tools != null:
+		test_save_tools.clear_main_save()
+
+	var game_root_scene := load("res://scenes/game/GameRoot.tscn") as PackedScene
+
+	if game_root_scene == null:
+		push_error("Failed to load GameRoot.tscn.")
+		quit(1)
+		return
+
+	var game_root := game_root_scene.instantiate()
+	get_root().add_child(game_root)
+	await process_frame
+	await process_frame
+
+	var scene_root := game_root.get_node("%SceneRoot")
+	var overworld := scene_root.get_child(0)
+	var player := overworld.find_child("Player", true, false) as PlayerController
+
+	if overworld == null or player == null:
+		push_error("Grass encounter validation could not find overworld player.")
+		quit(1)
+		return
+
+	player.grass_encounter_chance = 1.0
+	Input.action_press("ui_right")
+	await create_timer(player.move_time + 0.25).timeout
+	Input.action_release("ui_right")
+	await process_frame
+	await process_frame
+
+	var active_scene := scene_root.get_child(0)
+
+	if active_scene == null or not active_scene is BattleUI:
+		push_error("Walking onto authored grass did not transition to BattleUI.")
+		quit(1)
+		return
+
+	var battle_manager := active_scene.get_node("BattleManager") as BattleManager
+
+	if battle_manager == null or battle_manager.get("_enemy_instance") == null:
+		push_error("Authored grass encounter did not create an enemy monster instance.")
+		quit(1)
+		return
+
+	if test_save_tools != null:
+		test_save_tools.clear_main_save()
+
+	game_root.queue_free()
+
+
+func _instantiate_overworld() -> Node:
+	var overworld_scene := load("res://scenes/overworld/Overworld.tscn") as PackedScene
+
+	if overworld_scene == null:
+		push_error("Failed to load Overworld.tscn.")
+		quit(1)
+		return null
+
+	var overworld := overworld_scene.instantiate()
+	get_root().add_child(overworld)
+	await process_frame
+	await process_frame
+	return overworld
+
+
+func _validate_blocked_dialogue_interactable(
+	player: PlayerController,
+	dialogue_panel: PanelContainer,
+	dialogue_label: Label,
+	tile_map: TileMap,
+	start_cell: Vector2i,
+	direction: Vector2i,
+	expected_text: String
+) -> void:
+	var target_cell := start_cell + direction
+	var target_tile_data := tile_map.get_cell_tile_data(0, target_cell)
+
+	if target_tile_data == null or not bool(target_tile_data.get_custom_data("blocked")):
+		push_error("%s is not authored as a blocked tile at %s." % [expected_text, str(target_cell)])
+		quit(1)
+		return
+
+	player.global_position = tile_map.to_global(tile_map.map_to_local(start_cell))
+	await process_frame
+	var position_before_step := player.global_position
+	var target_position: Vector2 = player.call("_get_target_position", direction)
+
+	if not target_position.is_equal_approx(position_before_step):
+		push_error("%s did not block movement." % expected_text)
+		quit(1)
+		return
+
+	player.set("_facing_direction", direction)
+	player.interact()
+	await process_frame
+
+	if not dialogue_panel.visible or not dialogue_label.text.contains(expected_text):
+		push_error("%s did not show dialogue." % expected_text)
+		quit(1)
+
+
+func _validate_trainer_interactable(player: PlayerController, tile_map: TileMap, start_cell: Vector2i, direction: Vector2i, expected_level: int) -> void:
+	_battle_monster = null
+	_battle_level = 0
+	player.global_position = tile_map.to_global(tile_map.map_to_local(start_cell))
+	await process_frame
+	var position_before_step := player.global_position
+	var target_position: Vector2 = player.call("_get_target_position", direction)
+
+	if not target_position.is_equal_approx(position_before_step):
+		push_error("Trainer interactable did not block movement.")
+		quit(1)
+		return
+
+	player.set("_facing_direction", direction)
+	player.interact()
+	await process_frame
+
+	if _battle_monster == null or _battle_level != expected_level:
+		push_error("Trainer interaction did not request the configured level %d battle." % expected_level)
+		quit(1)
+
+
+func _step_player(direction: Vector2i, move_time: float) -> void:
+	_release_all_directions()
+	_press_direction(direction)
+	await process_frame
+	await create_timer(move_time + 0.05).timeout
+	_release_direction(direction)
+	_release_all_directions()
+	await process_frame
+
+
+func _press_direction(direction: Vector2i) -> void:
+	Input.action_press(_get_direction_action(direction))
+
+
+func _release_direction(direction: Vector2i) -> void:
+	Input.action_release(_get_direction_action(direction))
+
+
+func _release_all_directions() -> void:
+	Input.action_release("ui_left")
+	Input.action_release("ui_right")
+	Input.action_release("ui_up")
+	Input.action_release("ui_down")
+
+
+func _get_direction_action(direction: Vector2i) -> String:
+	if direction == Vector2i.LEFT:
+		return "ui_left"
+	if direction == Vector2i.RIGHT:
+		return "ui_right"
+	if direction == Vector2i.UP:
+		return "ui_up"
+	return "ui_down"
+
+
+func _close_dialogue(dialogue_panel: PanelContainer, player: PlayerController) -> void:
+	var accept_event := InputEventAction.new()
+	accept_event.action = "ui_accept"
+	accept_event.pressed = true
+	Input.parse_input_event(accept_event)
+	await process_frame
+	accept_event.pressed = false
+	Input.parse_input_event(accept_event)
+	await process_frame
+
+	if dialogue_panel.visible or not player.movement_enabled:
+		push_error("Closing dialogue did not restore movement.")
+		quit(1)
+
+
+func _on_battle_triggered(enemy_monster: Resource, enemy_level: int) -> void:
+	_battle_monster = enemy_monster
+	_battle_level = enemy_level

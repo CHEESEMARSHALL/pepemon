@@ -2,6 +2,8 @@ extends Node2D
 
 signal battle_triggered(enemy_monster: Resource, enemy_level: int)
 
+@export var map_data: Resource
+
 const CELL_SIZE := Vector2i(16, 16)
 const SOURCE_ID := 0
 const DIRT_TILE := Vector2i(0, 0)
@@ -17,7 +19,6 @@ const TERRAIN_GRASS := "Grass"
 const TERRAIN_WALL := "Wall"
 const TERRAIN_SIGN := "Sign"
 const TERRAIN_NPC := "NPC"
-const SIGN_MESSAGE := "Pepemon Route 1\nTall grass hides wild monsters."
 
 @onready var _player := %Player as PlayerController
 @onready var _ground_tile_map := %GroundTileMap as TileMap
@@ -29,7 +30,7 @@ var _interactables_by_cell: Dictionary = {}
 
 
 func _ready() -> void:
-	_setup_test_map()
+	_setup_map()
 	_setup_interactables()
 	_player.interaction_requested.connect(_on_player_interaction_requested)
 	_dialogue_panel.visible = false
@@ -48,32 +49,37 @@ func force_test_encounter(enemy_monster: Resource = null, enemy_level: int = 5) 
 		_player.trigger_battle()
 
 
-func _setup_test_map() -> void:
+func _setup_map() -> void:
 	if _ground_tile_map.tile_set == null:
-		_ground_tile_map.tile_set = _create_test_tile_set()
+		_ground_tile_map.tile_set = _create_route_tile_set()
 
 	_ground_tile_map.clear()
 
-	for x in range(4, 14):
-		for y in range(5, 12):
-			_ground_tile_map.set_cell(0, Vector2i(x, y), SOURCE_ID, DIRT_TILE)
+	if map_data == null:
+		push_error("Overworld requires map_data.")
+		return
 
-	for x in range(4, 14):
-		_ground_tile_map.set_cell(0, Vector2i(x, 5), SOURCE_ID, WALL_TILE)
-		_ground_tile_map.set_cell(0, Vector2i(x, 11), SOURCE_ID, WALL_TILE)
+	for y in range(map_data.get_height()):
+		for x in range(map_data.get_width()):
+			var cell := Vector2i(x, y)
+			_ground_tile_map.set_cell(0, cell, SOURCE_ID, _get_tile_atlas_coords(map_data.get_tile_code(cell)))
 
-	for y in range(5, 12):
-		_ground_tile_map.set_cell(0, Vector2i(4, y), SOURCE_ID, WALL_TILE)
-		_ground_tile_map.set_cell(0, Vector2i(13, y), SOURCE_ID, WALL_TILE)
-
-	for x in range(9, 13):
-		for y in range(7, 11):
-			_ground_tile_map.set_cell(0, Vector2i(x, y), SOURCE_ID, GRASS_TILE)
-
-	_ground_tile_map.set_cell(0, Vector2i(7, 8), SOURCE_ID, SIGN_TILE)
+	_player.global_position = _ground_tile_map.to_global(_ground_tile_map.map_to_local(map_data.player_start_cell))
 
 
-func _create_test_tile_set() -> TileSet:
+func _get_tile_atlas_coords(tile_code: String) -> Vector2i:
+	match tile_code:
+		"#":
+			return WALL_TILE
+		"G":
+			return GRASS_TILE
+		"S":
+			return SIGN_TILE
+		_:
+			return DIRT_TILE
+
+
+func _create_route_tile_set() -> TileSet:
 	var tile_set := TileSet.new()
 	tile_set.tile_size = CELL_SIZE
 	tile_set.add_custom_data_layer(0)
@@ -112,7 +118,6 @@ func _create_test_tile_set() -> TileSet:
 	source.get_tile_data(WALL_TILE, 0).set_custom_data(BLOCKED_DATA_KEY, true)
 	source.get_tile_data(SIGN_TILE, 0).set_custom_data(TERRAIN_DATA_KEY, TERRAIN_SIGN)
 	source.get_tile_data(SIGN_TILE, 0).set_custom_data(BLOCKED_DATA_KEY, true)
-	source.get_tile_data(SIGN_TILE, 0).set_custom_data(INTERACTION_TEXT_DATA_KEY, SIGN_MESSAGE)
 	source.get_tile_data(NPC_TILE, 0).set_custom_data(TERRAIN_DATA_KEY, TERRAIN_NPC)
 	source.get_tile_data(NPC_TILE, 0).set_custom_data(BLOCKED_DATA_KEY, true)
 	return tile_set
@@ -149,7 +154,13 @@ func _on_player_interaction_requested(cell: Vector2i) -> void:
 	if tile_data == null:
 		return
 
-	var message := str(tile_data.get_custom_data(INTERACTION_TEXT_DATA_KEY))
+	var message := ""
+
+	if map_data != null and map_data.has_method("get_sign_message"):
+		message = map_data.get_sign_message(cell)
+
+	if message.is_empty():
+		message = str(tile_data.get_custom_data(INTERACTION_TEXT_DATA_KEY))
 
 	if message.is_empty():
 		return
