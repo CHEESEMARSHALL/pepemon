@@ -5,6 +5,7 @@ var _battle_level := 0
 var _pickup_id := ""
 var _pickup_item_key := ""
 var _pickup_item_count := 0
+var _wild_battle_triggered := false
 
 
 func _init() -> void:
@@ -14,10 +15,11 @@ func _init() -> void:
 func _run() -> void:
 	_validate_map_data()
 	await _validate_scene_content()
+	await _validate_trainer_sight_scene()
 	await _validate_grass_encounter_flow()
 	await _validate_game_manager_trainer_state_flow()
 	await _validate_game_manager_pickup_flow()
-	print("Overworld content validation passed: authored map, collisions, signs, NPCs, trainers, pickups, and grass encounters.")
+	print("Overworld content validation passed: authored map, collisions, signs, NPCs, trainer sight, pickups, and grass encounters.")
 	quit()
 
 
@@ -99,6 +101,11 @@ func _validate_map_data() -> void:
 
 			if entry.get("battle_monster", null) == null or int(entry.get("battle_level", 0)) <= 0:
 				push_error("Route1.tres contains a trainer without battle data.")
+				quit(1)
+				return
+
+			if entry.get("sight_direction", Vector2i.ZERO) == Vector2i.ZERO or int(entry.get("sight_range", 0)) <= 0:
+				push_error("Route1.tres contains a trainer without sight data.")
 				quit(1)
 				return
 
@@ -190,6 +197,58 @@ func _validate_scene_content() -> void:
 	overworld.queue_free()
 
 
+func _validate_trainer_sight_scene() -> void:
+	var overworld := await _instantiate_overworld()
+	var player := overworld.find_child("Player", true, false) as PlayerController
+	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
+	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
+	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
+
+	overworld.trainer_battle_triggered.connect(_on_trainer_battle_triggered)
+	player.battle_triggered.connect(_on_wild_battle_triggered)
+	player.grass_encounter_chance = 1.0
+	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(9, 8)))
+	_battle_monster = null
+	_battle_level = 0
+	_wild_battle_triggered = false
+	_release_all_directions()
+	Input.action_press("ui_right")
+	await create_timer(player.move_time + 0.03).timeout
+	Input.action_release("ui_right")
+	await process_frame
+
+	if not dialogue_panel.visible or not dialogue_label.text.contains("training lane"):
+		push_error("Trainer sight did not show challenge dialogue.")
+		quit(1)
+		return
+
+	if _wild_battle_triggered:
+		push_error("Grass encounter triggered before trainer sight.")
+		quit(1)
+		return
+
+	await create_timer(0.25).timeout
+
+	if _battle_monster == null or _battle_level != 4:
+		push_error("Trainer sight did not request the configured battle.")
+		quit(1)
+		return
+
+	var defeated_trainers: Array[String] = ["trainer_rook"]
+	overworld.set_defeated_interactables(defeated_trainers)
+	_battle_monster = null
+	_battle_level = 0
+	overworld.call("_on_player_step_finished", Vector2i(10, 8))
+	await create_timer(0.25).timeout
+
+	if _battle_monster != null:
+		push_error("Defeated trainer sight requested another battle.")
+		quit(1)
+		return
+
+	overworld.queue_free()
+
+
 func _validate_grass_encounter_flow() -> void:
 	var test_save_tools := load("res://scripts/tests/TestSaveTools.gd")
 
@@ -274,16 +333,15 @@ func _validate_game_manager_trainer_state_flow() -> void:
 		quit(1)
 		return
 
-	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(10, 7)))
-	player.set("_facing_direction", Vector2i.UP)
-	player.interact()
+	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(10, 8)))
+	overworld.call("_on_player_step_finished", Vector2i(10, 8))
 	await process_frame
-	await process_frame
+	await create_timer(0.25).timeout
 
 	var active_scene := scene_root.get_child(0)
 
 	if active_scene == null or not active_scene is BattleUI:
-		push_error("Trainer interaction did not transition to BattleUI through GameManager.")
+		push_error("Trainer sight did not transition to BattleUI through GameManager.")
 		quit(1)
 		return
 
@@ -600,3 +658,7 @@ func _on_pickup_collected(pickup_id: String, item_key: String, item_count: int, 
 	_pickup_id = pickup_id
 	_pickup_item_key = item_key
 	_pickup_item_count = item_count
+
+
+func _on_wild_battle_triggered(_enemy_monster: Resource, _enemy_level: int) -> void:
+	_wild_battle_triggered = true

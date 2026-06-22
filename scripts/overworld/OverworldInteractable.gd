@@ -16,6 +16,9 @@ enum InteractionAction {
 @export var interaction_action := InteractionAction.DIALOGUE
 @export var battle_monster_data: Resource
 @export_range(1, 100, 1) var battle_monster_level := 5
+@export var sight_direction := Vector2i.ZERO
+@export_range(0, 12, 1) var sight_range := 0
+@export_multiline var challenge_dialogue_text := ""
 @export var pickup_item_key := ""
 @export var pickup_item_name := ""
 @export_range(1, 99, 1) var pickup_count := 1

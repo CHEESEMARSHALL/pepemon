@@ -3,6 +3,7 @@ class_name PlayerController
 
 signal battle_triggered(enemy_monster: Resource, enemy_level: int)
 signal interaction_requested(cell: Vector2i)
+signal step_finished(cell: Vector2i)
 
 @export_group("Movement")
 @export var movement_enabled := true
@@ -107,6 +108,11 @@ func _get_target_position(direction: Vector2i) -> Vector2:
 
 func _on_step_finished() -> void:
 	_is_moving = false
+	step_finished.emit(_get_current_cell())
+
+	if not movement_enabled:
+		return
+
 	_check_for_grass_encounter()
 
 
@@ -146,11 +152,18 @@ func _is_blocked_tile(cell: Vector2i) -> bool:
 
 func _snap_to_grid() -> void:
 	if _tile_map != null:
-		var current_cell := _tile_map.local_to_map(_tile_map.to_local(global_position))
+		var current_cell := _get_current_cell()
 		global_position = _tile_map.to_global(_tile_map.map_to_local(current_cell))
 		return
 
 	global_position = global_position.snapped(fallback_cell_size)
+
+
+func _get_current_cell() -> Vector2i:
+	if _tile_map == null:
+		return Vector2i.ZERO
+
+	return _tile_map.local_to_map(_tile_map.to_local(global_position))
 
 
 func trigger_battle() -> void:

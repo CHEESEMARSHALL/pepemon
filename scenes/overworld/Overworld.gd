@@ -32,6 +32,7 @@ const TERRAIN_NPC := "NPC"
 var _interactables_by_cell: Dictionary = {}
 var _defeated_interactable_ids: Array[String] = []
 var _collected_interactable_ids: Array[String] = []
+var _active_sight_trainer_id := ""
 
 
 func _ready() -> void:
@@ -39,6 +40,7 @@ func _ready() -> void:
 	_spawn_interactables_from_map_data()
 	_setup_interactables()
 	_player.interaction_requested.connect(_on_player_interaction_requested)
+	_player.step_finished.connect(_on_player_step_finished)
 	_dialogue_panel.visible = false
 
 
@@ -168,6 +170,9 @@ func _spawn_interactables_from_map_data() -> void:
 		interactable.interaction_action = int(entry.get("action", 0))
 		interactable.battle_monster_data = entry.get("battle_monster", null)
 		interactable.battle_monster_level = int(entry.get("battle_level", 5))
+		interactable.sight_direction = entry.get("sight_direction", Vector2i.ZERO)
+		interactable.sight_range = int(entry.get("sight_range", 0))
+		interactable.challenge_dialogue_text = str(entry.get("challenge_dialogue", interactable.dialogue_text))
 		interactable.pickup_item_key = str(entry.get("item_key", ""))
 		interactable.pickup_item_name = str(entry.get("item_name", ""))
 		interactable.pickup_count = int(entry.get("item_count", 1))
@@ -202,6 +207,77 @@ func _on_player_interaction_requested(cell: Vector2i) -> void:
 		return
 
 	_show_dialogue(message)
+
+
+func _on_player_step_finished(cell: Vector2i) -> void:
+	if not _active_sight_trainer_id.is_empty() or _dialogue_panel.visible:
+		return
+
+	var trainer := _get_sighting_trainer(cell)
+
+	if trainer == null:
+		return
+
+	_trigger_trainer_sight(trainer)
+
+
+func _get_sighting_trainer(player_cell: Vector2i) -> Node:
+	for interactable in _interactables_by_cell.values():
+		if interactable == null:
+			continue
+
+		if int(interactable.get("interaction_action")) != 1 or bool(interactable.get("is_defeated")):
+			continue
+
+		var sight_direction: Vector2i = interactable.get("sight_direction")
+		var sight_range := int(interactable.get("sight_range"))
+
+		if sight_direction == Vector2i.ZERO or sight_range <= 0:
+			continue
+
+		for distance in range(1, sight_range + 1):
+			var sight_cell: Vector2i = interactable.grid_cell + sight_direction * distance
+
+			if _is_sight_blocked(sight_cell):
+				break
+
+			if sight_cell == player_cell:
+				return interactable
+
+	return null
+
+
+func _is_sight_blocked(cell: Vector2i) -> bool:
+	var tile_data := _ground_tile_map.get_cell_tile_data(0, cell)
+
+	if tile_data == null:
+		return true
+
+	if bool(tile_data.get_custom_data(BLOCKED_DATA_KEY)):
+		return true
+
+	return _interactables_by_cell.has(cell)
+
+
+func _trigger_trainer_sight(interactable: Node) -> void:
+	_active_sight_trainer_id = str(interactable.get("interactable_id"))
+	_player.movement_enabled = false
+	var challenge_text := str(interactable.get("challenge_dialogue_text"))
+
+	if challenge_text.is_empty():
+		challenge_text = str(interactable.call("get_interaction_text"))
+
+	_show_dialogue(challenge_text)
+	call_deferred("_finish_trainer_sight", interactable)
+
+
+func _finish_trainer_sight(interactable: Node) -> void:
+	await get_tree().create_timer(0.2).timeout
+	close_dialogue()
+	_active_sight_trainer_id = ""
+
+	if interactable != null and not bool(interactable.get("is_defeated")):
+		trainer_battle_triggered.emit(str(interactable.get("interactable_id")), interactable.battle_monster_data, int(interactable.battle_monster_level))
 
 
 func _handle_interactable(interactable: Node) -> void:
