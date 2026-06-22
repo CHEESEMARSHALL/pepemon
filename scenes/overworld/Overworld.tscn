@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/PlayerController.gd" id="1_player_controller"]
 [ext_resource type="Script" path="res://scenes/overworld/Overworld.gd" id="2_overworld"]
 [ext_resource type="Resource" path="res://data/encounters/StarterGrass.tres" id="3_encounter_table"]
+[ext_resource type="PackedScene" path="res://scenes/overworld/NpcInteractable.tscn" id="4_npc_interactable"]
 
 [node name="Overworld" type="Node2D"]
 script = ExtResource("2_overworld")
@@ -23,6 +24,14 @@ offset_top = 24.0
 offset_right = 584.0
 offset_bottom = 72.0
 text = "Test Map: walk into grass to trigger encounters."
+
+[node name="Interactables" type="Node2D" parent="."]
+unique_name_in_owner = true
+
+[node name="ScoutMira" parent="Interactables" instance=ExtResource("4_npc_interactable")]
+unique_name_in_owner = true
+grid_cell = Vector2i(8, 7)
+dialogue_text = "Scout Mira: Monsters get faster as they level up."
 
 [node name="DialogueLayer" type="CanvasLayer" parent="."]
 

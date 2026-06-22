@@ -16,16 +16,19 @@ const TERRAIN_WALL := "Wall"
 const TERRAIN_SIGN := "Sign"
 const TERRAIN_NPC := "NPC"
 const SIGN_MESSAGE := "Pepemon Route 1\nTall grass hides wild monsters."
-const NPC_MESSAGE := "Scout Mira: Monsters get faster as they level up."
 
 @onready var _player := %Player as PlayerController
 @onready var _ground_tile_map := %GroundTileMap as TileMap
 @onready var _dialogue_panel := %DialoguePanel as PanelContainer
 @onready var _dialogue_label := %DialogueLabel as Label
+@onready var _interactables := %Interactables as Node2D
+
+var _interactables_by_cell: Dictionary = {}
 
 
 func _ready() -> void:
 	_setup_test_map()
+	_setup_interactables()
 	_player.interaction_requested.connect(_on_player_interaction_requested)
 	_dialogue_panel.visible = false
 
@@ -66,7 +69,6 @@ func _setup_test_map() -> void:
 			_ground_tile_map.set_cell(0, Vector2i(x, y), SOURCE_ID, GRASS_TILE)
 
 	_ground_tile_map.set_cell(0, Vector2i(7, 8), SOURCE_ID, SIGN_TILE)
-	_ground_tile_map.set_cell(0, Vector2i(8, 7), SOURCE_ID, NPC_TILE)
 
 
 func _create_test_tile_set() -> TileSet:
@@ -111,11 +113,35 @@ func _create_test_tile_set() -> TileSet:
 	source.get_tile_data(SIGN_TILE, 0).set_custom_data(INTERACTION_TEXT_DATA_KEY, SIGN_MESSAGE)
 	source.get_tile_data(NPC_TILE, 0).set_custom_data(TERRAIN_DATA_KEY, TERRAIN_NPC)
 	source.get_tile_data(NPC_TILE, 0).set_custom_data(BLOCKED_DATA_KEY, true)
-	source.get_tile_data(NPC_TILE, 0).set_custom_data(INTERACTION_TEXT_DATA_KEY, NPC_MESSAGE)
 	return tile_set
 
 
+func _setup_interactables() -> void:
+	_interactables_by_cell.clear()
+
+	if _interactables == null:
+		return
+
+	for child in _interactables.get_children():
+		if not child.has_method("place_on_tile_map") or not child.has_method("get_interaction_text"):
+			continue
+
+		child.place_on_tile_map(_ground_tile_map)
+		_interactables_by_cell[child.grid_cell] = child
+
+		if child.blocks_movement:
+			_ground_tile_map.set_cell(0, child.grid_cell, SOURCE_ID, NPC_TILE)
+
+
 func _on_player_interaction_requested(cell: Vector2i) -> void:
+	if _interactables_by_cell.has(cell):
+		var interactable = _interactables_by_cell[cell]
+
+		if interactable != null and interactable.has_method("get_interaction_text") and not interactable.get_interaction_text().is_empty():
+			_show_dialogue(interactable.get_interaction_text())
+
+		return
+
 	var tile_data := _ground_tile_map.get_cell_tile_data(0, cell)
 
 	if tile_data == null:
