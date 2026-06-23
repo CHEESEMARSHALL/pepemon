@@ -238,6 +238,8 @@ func _validate_scene_content() -> void:
 	_validate_tile_terrain(tile_map, 1, Vector2i(2, 1), "House", true)
 	_validate_tile_terrain(tile_map, 0, Vector2i(12, 10), "Grass", false)
 	_validate_tile_terrain(tile_map, 1, Vector2i(12, 10), "Sign", true)
+	await _validate_dynamic_overlay_restore(overworld, tile_map, Vector2i(12, 10), "Sign")
+	await _validate_dynamic_overlay_clear(overworld, tile_map, Vector2i(9, 8))
 	var follow_camera := player.get_node_or_null("FollowCamera") as Camera2D
 
 	if follow_camera == null or not follow_camera.enabled:
@@ -833,6 +835,29 @@ func _is_tile_blocked_on_any_layer(tile_map: TileMap, cell: Vector2i) -> bool:
 			return true
 
 	return false
+
+
+func _validate_dynamic_overlay_restore(overworld: Node, tile_map: TileMap, cell: Vector2i, expected_restored_terrain: String) -> void:
+	overworld.call("_set_dynamic_overlay_tile", cell, Vector2i(4, 0))
+	await process_frame
+	_validate_tile_terrain(tile_map, 1, cell, "NPC", true)
+	overworld.call("_clear_dynamic_overlay_tile", cell)
+	await process_frame
+	_validate_tile_terrain(tile_map, 1, cell, expected_restored_terrain, true)
+
+
+func _validate_dynamic_overlay_clear(overworld: Node, tile_map: TileMap, cell: Vector2i) -> void:
+	overworld.call("_set_dynamic_overlay_tile", cell, Vector2i(4, 0))
+	await process_frame
+	_validate_tile_terrain(tile_map, 1, cell, "NPC", true)
+	overworld.call("_clear_dynamic_overlay_tile", cell)
+	await process_frame
+
+	var tile_data := tile_map.get_cell_tile_data(1, cell)
+
+	if tile_data != null:
+		push_error("Dynamic overlay clear should leave no object tile at %s." % str(cell))
+		quit(1)
 
 
 func _validate_debug_hud(debug_label: Label, expected_map_name: String, expected_cell: Vector2i, expected_terrain: String, expected_encounter_percent: int) -> void:

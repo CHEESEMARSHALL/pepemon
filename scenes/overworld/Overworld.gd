@@ -44,6 +44,8 @@ const TERRAIN_HOUSE := "House"
 @onready var _interactables := %Interactables as Node2D
 
 var _interactables_by_cell: Dictionary = {}
+var _authored_overlay_atlas_by_cell: Dictionary = {}
+var _dynamic_overlay_cells: Dictionary = {}
 var _defeated_interactable_ids: Array[String] = []
 var _collected_interactable_ids: Array[String] = []
 var _active_sight_trainer_id := ""
@@ -87,6 +89,8 @@ func _setup_map() -> void:
 
 	_ensure_tile_map_layers()
 	_ground_tile_map.clear()
+	_authored_overlay_atlas_by_cell.clear()
+	_dynamic_overlay_cells.clear()
 
 	if map_data == null:
 		push_error("Overworld requires map_data.")
@@ -110,7 +114,9 @@ func _setup_map() -> void:
 				var overlay_code := str(map_data.get_overlay_tile_code(cell))
 
 				if not overlay_code.is_empty():
-					_ground_tile_map.set_cell(OVERLAY_LAYER, cell, SOURCE_ID, _get_tile_atlas_coords(overlay_code))
+					var overlay_atlas_coords := _get_tile_atlas_coords(overlay_code)
+					_authored_overlay_atlas_by_cell[cell] = overlay_atlas_coords
+					_ground_tile_map.set_cell(OVERLAY_LAYER, cell, SOURCE_ID, overlay_atlas_coords)
 
 	var start_cell: Vector2i = player_start_cell_override if player_start_cell_override != Vector2i(-999, -999) else map_data.player_start_cell
 	_player.global_position = _ground_tile_map.to_global(_ground_tile_map.map_to_local(start_cell))
@@ -231,7 +237,28 @@ func _setup_interactables() -> void:
 		_interactables_by_cell[child.grid_cell] = child
 
 		if child.blocks_movement:
-			_ground_tile_map.set_cell(OVERLAY_LAYER, child.grid_cell, SOURCE_ID, NPC_TILE)
+			_set_dynamic_overlay_tile(child.grid_cell, NPC_TILE)
+
+
+func _set_dynamic_overlay_tile(cell: Vector2i, atlas_coords: Vector2i) -> void:
+	if _ground_tile_map == null:
+		return
+
+	_dynamic_overlay_cells[cell] = atlas_coords
+	_ground_tile_map.set_cell(OVERLAY_LAYER, cell, SOURCE_ID, atlas_coords)
+
+
+func _clear_dynamic_overlay_tile(cell: Vector2i) -> void:
+	if _ground_tile_map == null:
+		return
+
+	_dynamic_overlay_cells.erase(cell)
+
+	if _authored_overlay_atlas_by_cell.has(cell):
+		_ground_tile_map.set_cell(OVERLAY_LAYER, cell, SOURCE_ID, _authored_overlay_atlas_by_cell[cell])
+		return
+
+	_ground_tile_map.erase_cell(OVERLAY_LAYER, cell)
 
 
 func _spawn_interactables_from_map_data() -> void:
