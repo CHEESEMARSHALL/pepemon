@@ -12,3 +12,18 @@ offset_top = -8.0
 offset_right = 6.0
 offset_bottom = 8.0
 color = Color(0.24, 0.36, 0.86, 1)
+
+[node name="AlertMarker" type="Label" parent="."]
+visible = false
+offset_left = -4.0
+offset_top = -28.0
+offset_right = 4.0
+offset_bottom = -12.0
+text = "!"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_colors/font_color = Color(1, 0.9, 0.12, 1)
+theme_override_colors/font_shadow_color = Color(0.05, 0.05, 0.05, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 18

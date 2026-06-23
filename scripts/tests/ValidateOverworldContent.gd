@@ -227,6 +227,7 @@ func _validate_scene_content() -> void:
 	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(8, 8), Vector2i.LEFT, "Read")
 	_validate_interactable_visual(interactables, "ScoutMira", Color(0.24, 0.36, 0.86, 1.0))
 	_validate_interactable_visual(interactables, "TrainerRook", Color(0.92, 0.52, 0.16, 1.0))
+	_validate_alert_marker(interactables, "TrainerRook", false)
 	_validate_interactable_visual(interactables, "Route1Potion", Color(0.56, 0.28, 0.86, 1.0))
 
 	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(5, 8)))
@@ -341,6 +342,7 @@ func _validate_route_2_scene_content() -> void:
 	_validate_debug_hud(debug_label, "Pepemon Route 2", Vector2i(1, 6), "Dirt", 0)
 	_validate_interactable_visual(interactables, "DrifterNia", Color(0.24, 0.36, 0.86, 1.0))
 	_validate_interactable_visual(interactables, "TrainerPike", Color(0.92, 0.52, 0.16, 1.0))
+	_validate_alert_marker(interactables, "TrainerPike", false)
 	_validate_interactable_visual(interactables, "Route2Capsule", Color(0.56, 0.28, 0.86, 1.0))
 
 	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(4, 9), Vector2i.UP, "Talk")
@@ -371,6 +373,7 @@ func _validate_trainer_sight_scene() -> void:
 	var overworld := await _instantiate_overworld()
 	var player := overworld.find_child("Player", true, false) as PlayerController
 	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
+	var interactables := overworld.get_node("%Interactables") as Node2D
 	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
 	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
 
@@ -386,6 +389,8 @@ func _validate_trainer_sight_scene() -> void:
 	await create_timer(player.move_time + 0.03).timeout
 	Input.action_release("ui_right")
 	await process_frame
+
+	_validate_alert_marker(interactables, "TrainerRook", true)
 
 	if not dialogue_panel.visible or not dialogue_label.text.contains("training lane"):
 		push_error("Trainer sight did not show challenge dialogue.")
@@ -403,6 +408,8 @@ func _validate_trainer_sight_scene() -> void:
 		push_error("Trainer sight did not request the configured battle.")
 		quit(1)
 		return
+
+	_validate_alert_marker(interactables, "TrainerRook", false)
 
 	var defeated_trainers: Array[String] = ["trainer_rook"]
 	overworld.set_defeated_interactables(defeated_trainers)
@@ -752,6 +759,26 @@ func _validate_interactable_visual(interactables: Node2D, interactable_name: Str
 
 	if not body.color.is_equal_approx(expected_color):
 		push_error("%s has the wrong placeholder color: %s." % [interactable_name, str(body.color)])
+		quit(1)
+
+
+func _validate_alert_marker(interactables: Node2D, interactable_name: String, expected_visible: bool) -> void:
+	var interactable := interactables.get_node_or_null(interactable_name)
+
+	if interactable == null:
+		push_error("Could not find interactable alert marker owner for %s." % interactable_name)
+		quit(1)
+		return
+
+	var alert_marker := interactable.get_node_or_null("AlertMarker") as CanvasItem
+
+	if alert_marker == null:
+		push_error("%s is missing its alert marker." % interactable_name)
+		quit(1)
+		return
+
+	if alert_marker.visible != expected_visible:
+		push_error("%s alert marker visibility expected %s, got %s." % [interactable_name, str(expected_visible), str(alert_marker.visible)])
 		quit(1)
 
 

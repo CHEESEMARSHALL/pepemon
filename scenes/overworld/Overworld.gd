@@ -319,6 +319,10 @@ func _is_sight_blocked(cell: Vector2i) -> bool:
 func _trigger_trainer_sight(interactable: Node) -> void:
 	_active_sight_trainer_id = str(interactable.get("interactable_id"))
 	_player.movement_enabled = false
+
+	if interactable.has_method("show_alert_marker"):
+		interactable.call("show_alert_marker")
+
 	var challenge_text := str(interactable.get("challenge_dialogue_text"))
 
 	if challenge_text.is_empty():
@@ -334,6 +338,9 @@ func _finish_trainer_sight(interactable: Node) -> void:
 	_active_sight_trainer_id = ""
 
 	if interactable != null and not bool(interactable.get("is_defeated")):
+		if interactable.has_method("hide_alert_marker"):
+			interactable.call("hide_alert_marker")
+
 		trainer_battle_triggered.emit(str(interactable.get("interactable_id")), interactable.battle_monster_data, int(interactable.battle_monster_level))
 
 

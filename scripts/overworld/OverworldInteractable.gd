@@ -32,10 +32,12 @@ var is_defeated := false
 var is_collected := false
 
 @onready var _body := get_node_or_null("Body") as ColorRect
+@onready var _alert_marker := get_node_or_null("AlertMarker") as CanvasItem
 
 
 func _ready() -> void:
 	refresh_visual()
+	hide_alert_marker()
 
 
 func place_on_tile_map(tile_map: TileMap) -> void:
@@ -68,6 +70,22 @@ func refresh_visual() -> void:
 		return
 
 	_body.color = get_visual_color()
+
+
+func show_alert_marker() -> void:
+	if _alert_marker == null:
+		_alert_marker = get_node_or_null("AlertMarker") as CanvasItem
+
+	if _alert_marker != null:
+		_alert_marker.visible = true
+
+
+func hide_alert_marker() -> void:
+	if _alert_marker == null:
+		_alert_marker = get_node_or_null("AlertMarker") as CanvasItem
+
+	if _alert_marker != null:
+		_alert_marker.visible = false
 
 
 func get_visual_color() -> Color:
