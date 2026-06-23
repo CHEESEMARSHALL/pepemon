@@ -43,6 +43,7 @@ var _inventory := {}
 var _route_state := {}
 var _current_scene: Node
 var _current_map_data: Resource
+var _current_overworld_scene: PackedScene
 var _pending_overworld_start_cell := Vector2i(-999, -999)
 var _current_player_cell := Vector2i(-999, -999)
 var _active_menu_tab := "party"
@@ -66,11 +67,13 @@ func show_overworld() -> void:
 	_clear_current_scene()
 	close_overworld_menu()
 
-	if overworld_scene == null:
+	var next_overworld_scene := _current_overworld_scene if _current_overworld_scene != null else overworld_scene
+
+	if next_overworld_scene == null:
 		push_error("GameManager requires an overworld_scene.")
 		return
 
-	_current_scene = overworld_scene.instantiate()
+	_current_scene = next_overworld_scene.instantiate()
 
 	if _current_map_data == null:
 		_current_map_data = starting_map_data
@@ -513,6 +516,14 @@ func _load_world_state_from_save(save_data: Dictionary) -> void:
 		if loaded_map != null:
 			_current_map_data = loaded_map
 
+	var scene_path := str(raw_world_state.get("scene_path", ""))
+
+	if not scene_path.is_empty():
+		var loaded_scene := load(scene_path) as PackedScene
+
+		if loaded_scene != null:
+			_current_overworld_scene = loaded_scene
+
 	var player_cell := _parse_saved_cell(raw_world_state.get("player_cell", null))
 
 	if player_cell != Vector2i(-999, -999):
@@ -676,7 +687,7 @@ func _collect_pickup(pickup_id: String, item_key: String, item_count: int, _item
 		_route_state["collected_pickups"].append(pickup_id)
 
 
-func _change_route(target_map: Resource, target_start_cell: Vector2i) -> void:
+func _change_route(target_map: Resource, target_start_cell: Vector2i, target_scene: PackedScene = null) -> void:
 	if target_map == null or _is_route_transitioning:
 		return
 
@@ -684,6 +695,7 @@ func _change_route(target_map: Resource, target_start_cell: Vector2i) -> void:
 	_set_overworld_movement_enabled(false)
 	await _fade_route_transition(1.0)
 	_current_map_data = target_map
+	_current_overworld_scene = target_scene
 	_pending_overworld_start_cell = target_start_cell
 	_current_player_cell = target_start_cell
 	show_overworld()
@@ -724,9 +736,13 @@ func _capture_overworld_position() -> void:
 
 func _get_world_state() -> Dictionary:
 	var map_path := ""
+	var scene_path := ""
 
 	if _current_map_data != null:
 		map_path = str(_current_map_data.resource_path)
+
+	if _current_overworld_scene != null:
+		scene_path = str(_current_overworld_scene.resource_path)
 
 	var player_cell := _current_player_cell
 
@@ -738,5 +754,6 @@ func _get_world_state() -> Dictionary:
 
 	return {
 		"map_path": map_path,
+		"scene_path": scene_path,
 		"player_cell": player_cell,
 	}

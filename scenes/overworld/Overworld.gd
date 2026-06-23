@@ -3,9 +3,11 @@ extends Node2D
 signal battle_triggered(enemy_monster: Resource, enemy_level: int)
 signal trainer_battle_triggered(trainer_id: String, enemy_monster: Resource, enemy_level: int)
 signal pickup_collected(pickup_id: String, item_key: String, item_count: int, item_name: String)
-signal route_transition_requested(target_map: Resource, target_start_cell: Vector2i)
+signal route_transition_requested(target_map: Resource, target_start_cell: Vector2i, target_scene: PackedScene)
 
 @export var map_data: Resource
+@export var authored_map_data: Resource
+@export var use_authored_tile_map := true
 @export var interactable_scene: PackedScene
 @export var route_tile_sheet: Texture2D
 @export var player_start_cell_override := Vector2i(-999, -999)
@@ -88,7 +90,6 @@ func _setup_map() -> void:
 		_ground_tile_map.tile_set = _create_route_tile_set()
 
 	_ensure_tile_map_layers()
-	_ground_tile_map.clear()
 	_authored_overlay_atlas_by_cell.clear()
 	_dynamic_overlay_cells.clear()
 
@@ -98,6 +99,29 @@ func _setup_map() -> void:
 
 	if _hint_label != null:
 		_hint_label.text = map_data.map_name
+
+	if _uses_authored_tile_map():
+		_cache_authored_overlay_tiles()
+	else:
+		_paint_tile_map_from_map_data()
+
+	var start_cell: Vector2i = player_start_cell_override if player_start_cell_override != Vector2i(-999, -999) else map_data.player_start_cell
+	_player.global_position = _ground_tile_map.to_global(_ground_tile_map.map_to_local(start_cell))
+	_player.encounter_table = map_data.encounter_table
+
+
+func _uses_authored_tile_map() -> bool:
+	if not use_authored_tile_map or authored_map_data == null or map_data == null:
+		return false
+
+	if map_data == authored_map_data:
+		return true
+
+	return not map_data.resource_path.is_empty() and map_data.resource_path == authored_map_data.resource_path
+
+
+func _paint_tile_map_from_map_data() -> void:
+	_ground_tile_map.clear()
 
 	var uses_overlay_rows := false
 
@@ -118,9 +142,15 @@ func _setup_map() -> void:
 					_authored_overlay_atlas_by_cell[cell] = overlay_atlas_coords
 					_ground_tile_map.set_cell(OVERLAY_LAYER, cell, SOURCE_ID, overlay_atlas_coords)
 
-	var start_cell: Vector2i = player_start_cell_override if player_start_cell_override != Vector2i(-999, -999) else map_data.player_start_cell
-	_player.global_position = _ground_tile_map.to_global(_ground_tile_map.map_to_local(start_cell))
-	_player.encounter_table = map_data.encounter_table
+
+func _cache_authored_overlay_tiles() -> void:
+	for cell in _ground_tile_map.get_used_cells(OVERLAY_LAYER):
+		var source_id := _ground_tile_map.get_cell_source_id(OVERLAY_LAYER, cell)
+
+		if source_id < 0:
+			continue
+
+		_authored_overlay_atlas_by_cell[cell] = _ground_tile_map.get_cell_atlas_coords(OVERLAY_LAYER, cell)
 
 
 func _get_tile_atlas_coords(tile_code: String) -> Vector2i:
@@ -358,6 +388,7 @@ func _check_route_transition(cell: Vector2i) -> bool:
 		return false
 
 	var target_map = transition.get("target_map", null)
+	var target_scene: PackedScene = transition.get("target_scene", null) as PackedScene
 
 	if target_map == null:
 		var target_map_path := str(transition.get("target_map_path", ""))
@@ -368,8 +399,14 @@ func _check_route_transition(cell: Vector2i) -> bool:
 	if target_map == null:
 		return false
 
+	if target_scene == null:
+		var target_scene_path := str(transition.get("target_scene_path", ""))
+
+		if not target_scene_path.is_empty():
+			target_scene = load(target_scene_path) as PackedScene
+
 	_player.movement_enabled = false
-	route_transition_requested.emit(target_map, transition.get("target_start_cell", Vector2i.ZERO))
+	route_transition_requested.emit(target_map, transition.get("target_start_cell", Vector2i.ZERO), target_scene)
 	return true
 
 

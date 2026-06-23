@@ -1,0 +1,36 @@
+[gd_resource type="TileSet" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/tiles/route1/route1_tiles.png" id="1_44ghf"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_tpjah"]
+texture = ExtResource("1_44ghf")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+0:0/0/custom_data_0 = "Dirt"
+1:0/0 = 0
+1:0/0/custom_data_0 = "Grass"
+2:0/0 = 0
+2:0/0/custom_data_0 = "Wall"
+2:0/0/custom_data_1 = true
+3:0/0 = 0
+3:0/0/custom_data_0 = "Sign"
+3:0/0/custom_data_1 = true
+4:0/0 = 0
+4:0/0/custom_data_0 = "NPC"
+4:0/0/custom_data_1 = true
+5:0/0 = 0
+5:0/0/custom_data_0 = "Tree"
+5:0/0/custom_data_1 = true
+6:0/0 = 0
+6:0/0/custom_data_0 = "House"
+6:0/0/custom_data_1 = true
+
+[resource]
+tile_size = Vector2i(32, 32)
+custom_data_layer_0/name = "terrain"
+custom_data_layer_0/type = 4
+custom_data_layer_1/name = "blocked"
+custom_data_layer_1/type = 1
+custom_data_layer_2/name = "interaction_text"
+custom_data_layer_2/type = 4
+sources/0 = SubResource("TileSetAtlasSource_tpjah")

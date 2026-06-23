@@ -43,21 +43,6 @@ func _validate_map_data() -> void:
 		quit(1)
 		return
 
-	if route_data.get_tile_code(Vector2i(9, 8)) != "G":
-		push_error("Route1.tres does not place grass east of the player start.")
-		quit(1)
-		return
-
-	if route_data.get_overlay_tile_code(Vector2i(0, 0)) != "T":
-		push_error("Route1.tres should use tree tiles for the first-area border.")
-		quit(1)
-		return
-
-	if route_data.get_overlay_tile_code(Vector2i(2, 1)) != "H":
-		push_error("Route1.tres should include a small house block for first-area worldbuilding.")
-		quit(1)
-		return
-
 	var route_transition: Dictionary = route_data.get_transition_entry(Vector2i(14, 6))
 
 	if route_transition.is_empty() or str(route_transition.get("target_map_path", "")).is_empty():
@@ -122,20 +107,6 @@ func _validate_map_data() -> void:
 		push_error("Route1.tres should use a custom cottage inspect prompt.")
 		quit(1)
 		return
-
-	for sign_entry in route_data.sign_messages:
-		var sign_cell: Vector2i = sign_entry.get("cell", Vector2i(-999, -999))
-		var sign_tile_code := ""
-
-		if route_data.has_method("get_overlay_tile_code"):
-			sign_tile_code = str(route_data.get_overlay_tile_code(sign_cell))
-		else:
-			sign_tile_code = str(route_data.get_tile_code(sign_cell))
-
-		if sign_tile_code != "S":
-			push_error("Sign message at %s does not match an authored sign tile." % str(sign_cell))
-			quit(1)
-			return
 
 	_validate_route_interactable_data(route_data, "Route1.tres", 4, 2, 2)
 
@@ -221,6 +192,7 @@ func _validate_scene_content() -> void:
 		quit(1)
 		return
 
+	_validate_authored_route_1_tile_map(tile_map, overworld.get("map_data"))
 	player.grass_encounter_chance = 0.0
 	overworld.call("_update_debug_hud")
 	await process_frame
@@ -838,6 +810,38 @@ func _validate_tile_terrain(tile_map: TileMap, layer: int, cell: Vector2i, expec
 	if blocked != expected_blocked:
 		push_error("Expected blocked=%s at %s, got %s." % [str(expected_blocked), str(cell), str(blocked)])
 		quit(1)
+
+
+func _validate_authored_route_1_tile_map(tile_map: TileMap, route_data: Resource) -> void:
+	if tile_map.tile_set == null:
+		push_error("Route 1 TileMap does not have an authored TileSet.")
+		quit(1)
+		return
+
+	if tile_map.tile_set.resource_path != "res://assets/tiles/route1/RouteTiles.tres":
+		push_error("Route 1 TileMap should use the shared RouteTiles.tres TileSet, got %s." % tile_map.tile_set.resource_path)
+		quit(1)
+		return
+
+	if tile_map.get_layers_count() < 2 or tile_map.get_layer_name(0) != "Ground" or tile_map.get_layer_name(1) != "Objects":
+		push_error("Route 1 TileMap should have Ground and Objects layers.")
+		quit(1)
+		return
+
+	_validate_tile_terrain(tile_map, 0, Vector2i(9, 8), "Grass", false)
+	_validate_tile_terrain(tile_map, 1, Vector2i(0, 0), "Tree", true)
+	_validate_tile_terrain(tile_map, 1, Vector2i(2, 1), "House", true)
+	_validate_tile_terrain(tile_map, 0, Vector2i(12, 10), "Grass", false)
+	_validate_tile_terrain(tile_map, 1, Vector2i(12, 10), "Sign", true)
+
+	for sign_entry in route_data.sign_messages:
+		var sign_cell: Vector2i = sign_entry.get("cell", Vector2i(-999, -999))
+		var sign_tile_data := tile_map.get_cell_tile_data(1, sign_cell)
+
+		if sign_tile_data == null or str(sign_tile_data.get_custom_data("terrain")) != "Sign":
+			push_error("Sign message at %s does not match an authored sign tile." % str(sign_cell))
+			quit(1)
+			return
 
 
 func _is_tile_blocked_on_any_layer(tile_map: TileMap, cell: Vector2i) -> bool:
