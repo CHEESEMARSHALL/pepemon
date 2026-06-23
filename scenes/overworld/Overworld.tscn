@@ -52,6 +52,28 @@ unique_name_in_owner = true
 
 [node name="DialogueLayer" type="CanvasLayer" parent="."]
 
+[node name="InteractionPrompt" type="PanelContainer" parent="DialogueLayer"]
+unique_name_in_owner = true
+visible = false
+offset_left = 24.0
+offset_top = 216.0
+offset_right = 136.0
+offset_bottom = 250.0
+
+[node name="InteractionPromptMargin" type="MarginContainer" parent="DialogueLayer/InteractionPrompt"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 6
+
+[node name="InteractionPromptLabel" type="Label" parent="DialogueLayer/InteractionPrompt/InteractionPromptMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Talk"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="DialoguePanel" type="PanelContainer" parent="DialogueLayer"]
 unique_name_in_owner = true
 visible = false

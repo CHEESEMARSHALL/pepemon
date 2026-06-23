@@ -184,10 +184,12 @@ func _validate_scene_content() -> void:
 	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
 	var hint_label := overworld.get_node("%HintLabel") as Label
 	var interactables := overworld.get_node("%Interactables") as Node2D
+	var interaction_prompt := overworld.get_node("%InteractionPrompt") as PanelContainer
+	var interaction_prompt_label := overworld.get_node("%InteractionPromptLabel") as Label
 	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
 	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
 
-	if player == null or tile_map == null or hint_label == null or interactables == null or dialogue_panel == null or dialogue_label == null:
+	if player == null or tile_map == null or hint_label == null or interactables == null or interaction_prompt == null or interaction_prompt_label == null or dialogue_panel == null or dialogue_label == null:
 		push_error("Overworld content validation could not find required scene nodes.")
 		quit(1)
 		return
@@ -218,6 +220,7 @@ func _validate_scene_content() -> void:
 		return
 
 	await _validate_player_facing_marker(player)
+	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(8, 8), Vector2i.LEFT, "Read")
 	_validate_interactable_visual(interactables, "ScoutMira", Color(0.24, 0.36, 0.86, 1.0))
 	_validate_interactable_visual(interactables, "TrainerRook", Color(0.92, 0.52, 0.16, 1.0))
 	_validate_interactable_visual(interactables, "Route1Potion", Color(0.56, 0.28, 0.86, 1.0))
@@ -243,6 +246,7 @@ func _validate_scene_content() -> void:
 		quit(1)
 		return
 
+	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(8, 8), Vector2i.LEFT, "Read")
 	player.interact()
 	await process_frame
 
@@ -251,7 +255,13 @@ func _validate_scene_content() -> void:
 		quit(1)
 		return
 
+	if interaction_prompt.visible:
+		push_error("Interaction prompt stayed visible while dialogue was open.")
+		quit(1)
+		return
+
 	await _close_dialogue(dialogue_panel, player)
+	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(8, 8), Vector2i.UP, "Talk")
 	await _validate_blocked_dialogue_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(8, 8), Vector2i.UP, "Scout Mira")
 	await _close_dialogue(dialogue_panel, player)
 	await _validate_blocked_dialogue_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(6, 9), Vector2i.DOWN, "Keeper Sol")
@@ -259,18 +269,22 @@ func _validate_scene_content() -> void:
 
 	overworld.trainer_battle_triggered.connect(_on_trainer_battle_triggered)
 	overworld.pickup_collected.connect(_on_pickup_collected)
+	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(10, 7), Vector2i.UP, "Battle")
 	await _validate_trainer_interactable(player, tile_map, Vector2i(10, 7), Vector2i.UP, 4)
 	await _validate_trainer_interactable(player, tile_map, Vector2i(11, 10), Vector2i.UP, 5)
 	var defeated_trainers: Array[String] = ["trainer_rook"]
 	overworld.set_defeated_interactables(defeated_trainers)
 	_validate_interactable_visual(interactables, "TrainerRook", Color(0.45, 0.45, 0.5, 1.0))
+	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(10, 7), Vector2i.UP, "Talk")
 	await _validate_defeated_trainer_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(10, 7), Vector2i.UP, "Good match")
 	await _close_dialogue(dialogue_panel, player)
+	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(5, 3), Vector2i.UP, "Pick up")
 	await _validate_pickup_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(5, 3), Vector2i.UP, "route1_potion", "potion", 1, "Found a Potion")
 	await _close_dialogue(dialogue_panel, player)
 	var collected_pickups: Array[String] = ["route1_capsules"]
 	overworld.set_collected_interactables(collected_pickups)
 	_validate_interactable_visual(interactables, "Route1Capsules", Color(0.45, 0.45, 0.5, 1.0))
+	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(12, 3), Vector2i.UP, "Check")
 	await _validate_collected_pickup_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(12, 3), Vector2i.UP, "empty")
 	overworld.queue_free()
 
@@ -282,10 +296,12 @@ func _validate_route_2_scene_content() -> void:
 	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
 	var hint_label := overworld.get_node("%HintLabel") as Label
 	var interactables := overworld.get_node("%Interactables") as Node2D
+	var interaction_prompt := overworld.get_node("%InteractionPrompt") as PanelContainer
+	var interaction_prompt_label := overworld.get_node("%InteractionPromptLabel") as Label
 	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
 	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
 
-	if player == null or tile_map == null or hint_label == null or interactables == null or dialogue_panel == null or dialogue_label == null:
+	if player == null or tile_map == null or hint_label == null or interactables == null or interaction_prompt == null or interaction_prompt_label == null or dialogue_panel == null or dialogue_label == null:
 		push_error("Route 2 scene validation could not find required scene nodes.")
 		quit(1)
 		return
@@ -312,21 +328,26 @@ func _validate_route_2_scene_content() -> void:
 	_validate_interactable_visual(interactables, "TrainerPike", Color(0.92, 0.52, 0.16, 1.0))
 	_validate_interactable_visual(interactables, "Route2Capsule", Color(0.56, 0.28, 0.86, 1.0))
 
+	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(4, 9), Vector2i.UP, "Talk")
 	await _validate_blocked_dialogue_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(4, 9), Vector2i.UP, "Drifter Nia")
 	await _close_dialogue(dialogue_panel, player)
 	overworld.trainer_battle_triggered.connect(_on_trainer_battle_triggered)
 	overworld.pickup_collected.connect(_on_pickup_collected)
+	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(12, 8), Vector2i.LEFT, "Battle")
 	await _validate_trainer_interactable(player, tile_map, Vector2i(12, 8), Vector2i.LEFT, 6)
 	var defeated_trainers: Array[String] = ["trainer_pike"]
 	overworld.set_defeated_interactables(defeated_trainers)
 	_validate_interactable_visual(interactables, "TrainerPike", Color(0.45, 0.45, 0.5, 1.0))
+	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(12, 8), Vector2i.LEFT, "Talk")
 	await _validate_defeated_trainer_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(12, 8), Vector2i.LEFT, "type matchups")
 	await _close_dialogue(dialogue_panel, player)
+	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(13, 9), Vector2i.DOWN, "Pick up")
 	await _validate_pickup_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(13, 9), Vector2i.DOWN, "route2_capsule", "capture_capsule", 1, "Found a Capture Capsule")
 	await _close_dialogue(dialogue_panel, player)
 	var collected_pickups: Array[String] = ["route2_capsule"]
 	overworld.set_collected_interactables(collected_pickups)
 	_validate_interactable_visual(interactables, "Route2Capsule", Color(0.45, 0.45, 0.5, 1.0))
+	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(13, 9), Vector2i.DOWN, "Check")
 	await _validate_collected_pickup_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(13, 9), Vector2i.DOWN, "empty")
 	overworld.queue_free()
 
@@ -704,6 +725,30 @@ func _validate_player_facing_marker(player: PlayerController) -> void:
 
 	player.set_facing_direction(Vector2i.LEFT)
 	await process_frame
+
+
+func _validate_interaction_prompt(
+	player: PlayerController,
+	interaction_prompt: PanelContainer,
+	interaction_prompt_label: Label,
+	tile_map: TileMap,
+	start_cell: Vector2i,
+	direction: Vector2i,
+	expected_text: String
+) -> void:
+	player.global_position = tile_map.to_global(tile_map.map_to_local(start_cell))
+	await process_frame
+	player.set_facing_direction(direction)
+	await process_frame
+
+	if not interaction_prompt.visible:
+		push_error("Interaction prompt did not appear for %s at %s." % [expected_text, str(start_cell + direction)])
+		quit(1)
+		return
+
+	if interaction_prompt_label.text != expected_text:
+		push_error("Interaction prompt expected '%s', got '%s'." % [expected_text, interaction_prompt_label.text])
+		quit(1)
 
 
 func _validate_blocked_dialogue_interactable(

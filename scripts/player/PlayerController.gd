@@ -4,6 +4,7 @@ class_name PlayerController
 signal battle_triggered(enemy_monster: Resource, enemy_level: int)
 signal interaction_requested(cell: Vector2i)
 signal step_finished(cell: Vector2i)
+signal facing_changed(direction: Vector2i)
 
 @export_group("Movement")
 @export var movement_enabled := true
@@ -122,6 +123,7 @@ func _set_facing_direction(direction: Vector2i) -> void:
 
 	_facing_direction = direction
 	_update_facing_marker()
+	facing_changed.emit(_facing_direction)
 
 
 func _update_facing_marker() -> void:

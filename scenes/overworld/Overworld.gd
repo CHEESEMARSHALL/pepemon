@@ -28,6 +28,8 @@ const TERRAIN_NPC := "NPC"
 @onready var _player := %Player as PlayerController
 @onready var _ground_tile_map := %GroundTileMap as TileMap
 @onready var _hint_label := %HintLabel as Label
+@onready var _interaction_prompt := %InteractionPrompt as PanelContainer
+@onready var _interaction_prompt_label := %InteractionPromptLabel as Label
 @onready var _dialogue_panel := %DialoguePanel as PanelContainer
 @onready var _dialogue_label := %DialogueLabel as Label
 @onready var _interactables := %Interactables as Node2D
@@ -44,7 +46,9 @@ func _ready() -> void:
 	_setup_interactables()
 	_player.interaction_requested.connect(_on_player_interaction_requested)
 	_player.step_finished.connect(_on_player_step_finished)
+	_player.facing_changed.connect(_on_player_facing_changed)
 	_dialogue_panel.visible = false
+	_update_interaction_prompt()
 
 
 func _input(event: InputEvent) -> void:
@@ -198,6 +202,8 @@ func _spawn_interactables_from_map_data() -> void:
 
 
 func _on_player_interaction_requested(cell: Vector2i) -> void:
+	_hide_interaction_prompt()
+
 	if _interactables_by_cell.has(cell):
 		var interactable = _interactables_by_cell[cell]
 
@@ -232,20 +238,25 @@ func _on_player_step_finished(cell: Vector2i) -> void:
 	var trainer := _get_sighting_trainer(cell)
 
 	if trainer == null:
-		_check_route_transition(cell)
+		if _check_route_transition(cell):
+			_hide_interaction_prompt()
+			return
+
+		_update_interaction_prompt()
 		return
 
+	_hide_interaction_prompt()
 	_trigger_trainer_sight(trainer)
 
 
-func _check_route_transition(cell: Vector2i) -> void:
+func _check_route_transition(cell: Vector2i) -> bool:
 	if map_data == null or not map_data.has_method("get_transition_entry"):
-		return
+		return false
 
 	var transition: Dictionary = map_data.get_transition_entry(cell)
 
 	if transition.is_empty():
-		return
+		return false
 
 	var target_map = transition.get("target_map", null)
 
@@ -256,10 +267,11 @@ func _check_route_transition(cell: Vector2i) -> void:
 			target_map = load(target_map_path)
 
 	if target_map == null:
-		return
+		return false
 
 	_player.movement_enabled = false
 	route_transition_requested.emit(target_map, transition.get("target_start_cell", Vector2i.ZERO))
+	return true
 
 
 func _get_sighting_trainer(player_cell: Vector2i) -> Node:
@@ -364,6 +376,7 @@ func _handle_interactable(interactable: Node) -> void:
 
 
 func _show_dialogue(message: String) -> void:
+	_hide_interaction_prompt()
 	_dialogue_label.text = message
 	_dialogue_panel.visible = true
 	_player.movement_enabled = false
@@ -372,6 +385,7 @@ func _show_dialogue(message: String) -> void:
 func close_dialogue() -> void:
 	_dialogue_panel.visible = false
 	_player.movement_enabled = true
+	_update_interaction_prompt()
 
 
 func set_defeated_interactables(defeated_ids: Array[String]) -> void:
@@ -382,6 +396,8 @@ func set_defeated_interactables(defeated_ids: Array[String]) -> void:
 			interactable.is_defeated = _defeated_interactable_ids.has(str(interactable.get("interactable_id")))
 			interactable.refresh_visual()
 
+	_update_interaction_prompt()
+
 
 func set_collected_interactables(collected_ids: Array[String]) -> void:
 	_collected_interactable_ids = collected_ids.duplicate()
@@ -390,3 +406,64 @@ func set_collected_interactables(collected_ids: Array[String]) -> void:
 		if interactable != null:
 			interactable.is_collected = _collected_interactable_ids.has(str(interactable.get("interactable_id")))
 			interactable.refresh_visual()
+
+	_update_interaction_prompt()
+
+
+func _on_player_facing_changed(_direction: Vector2i) -> void:
+	_update_interaction_prompt()
+
+
+func _update_interaction_prompt() -> void:
+	if _interaction_prompt == null or _interaction_prompt_label == null or _player == null:
+		return
+
+	var prompt_text := _get_interaction_prompt_text()
+
+	if prompt_text.is_empty():
+		_hide_interaction_prompt()
+		return
+
+	_interaction_prompt_label.text = prompt_text
+	_interaction_prompt.visible = true
+
+
+func _hide_interaction_prompt() -> void:
+	if _interaction_prompt != null:
+		_interaction_prompt.visible = false
+
+
+func _get_interaction_prompt_text() -> String:
+	if _dialogue_panel != null and _dialogue_panel.visible:
+		return ""
+
+	if _player == null or not _player.movement_enabled:
+		return ""
+
+	var target_cell := get_player_cell() + _player.get_facing_direction()
+
+	if _interactables_by_cell.has(target_cell):
+		var interactable = _interactables_by_cell[target_cell]
+
+		if interactable == null:
+			return ""
+
+		var action := int(interactable.get("interaction_action"))
+
+		if action == 1:
+			return "Talk" if bool(interactable.get("is_defeated")) else "Battle"
+
+		if action == 2:
+			return "Check" if bool(interactable.get("is_collected")) else "Pick up"
+
+		return "Talk"
+
+	if map_data != null and map_data.has_method("get_sign_message") and not map_data.get_sign_message(target_cell).is_empty():
+		return "Read"
+
+	var tile_data := _ground_tile_map.get_cell_tile_data(0, target_cell) if _ground_tile_map != null else null
+
+	if tile_data != null and not str(tile_data.get_custom_data(INTERACTION_TEXT_DATA_KEY)).is_empty():
+		return "Read"
+
+	return ""
