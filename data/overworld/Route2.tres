@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="OverworldMapData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="OverworldMapData" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/OverworldMapData.gd" id="1_map_data"]
 [ext_resource type="Resource" path="res://data/encounters/Route2Grass.tres" id="2_route_2_grass"]
+[ext_resource type="Resource" path="res://data/monsters/WaterMonster.tres" id="3_water_monster"]
 
 [resource]
 script = ExtResource("1_map_data")
@@ -10,4 +11,5 @@ player_start_cell = Vector2i(1, 6)
 encounter_table = ExtResource("2_route_2_grass")
 rows = Array[String](["################", "#..............#", "#....GGGG......#", "#....GGGG......#", "#..............#", "#.############.#", "#..............#", "#.############.#", "#..............#", "#......S.......#", "#..............#", "################"])
 sign_messages = Array[Dictionary]([{ "cell": Vector2i(7, 9), "message": "Pepemon Route 2\nA quiet road for future content." }])
+interactables = Array[Dictionary]([{ "id": "drifter_nia", "name": "DrifterNia", "cell": Vector2i(4, 8), "dialogue": "Drifter Nia: Route 2's grass has stronger water monsters.", "action": 0, "blocks_movement": true }, { "id": "trainer_pike", "name": "TrainerPike", "cell": Vector2i(11, 8), "dialogue": "Pike: Route 2 is my training ground.", "defeated_dialogue": "Pike: I need to study type matchups again.", "challenge_dialogue": "Pike: I spotted you crossing Route 2!", "sight_direction": Vector2i(-1, 0), "sight_range": 3, "action": 1, "battle_monster": ExtResource("3_water_monster"), "battle_level": 6, "blocks_movement": true }, { "id": "route2_capsule", "name": "Route2Capsule", "cell": Vector2i(13, 10), "dialogue": "Found a Capture Capsule.", "collected_dialogue": "The route cache is empty.", "action": 2, "item_key": "capture_capsule", "item_name": "Capture Capsule", "item_count": 1, "blocks_movement": true }])
 transitions = Array[Dictionary]([{ "cell": Vector2i(1, 6), "target_map_path": "res://data/overworld/Route1.tres", "target_start_cell": Vector2i(14, 6) }])

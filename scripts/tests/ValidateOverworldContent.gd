@@ -15,6 +15,7 @@ func _init() -> void:
 func _run() -> void:
 	_validate_map_data()
 	await _validate_scene_content()
+	await _validate_route_2_scene_content()
 	await _validate_trainer_sight_scene()
 	await _validate_route_transition_flow()
 	await _validate_grass_encounter_flow()
@@ -86,6 +87,13 @@ func _validate_map_data() -> void:
 		quit(1)
 		return
 
+	if route_2.get_sign_message(Vector2i(7, 9)).is_empty():
+		push_error("Route2.tres is missing the route sign message.")
+		quit(1)
+		return
+
+	_validate_route_interactable_data(route_2, "Route2.tres", 3, 1, 1)
+
 	if route_data.get_sign_message(Vector2i(7, 8)).is_empty():
 		push_error("Route1.tres is missing the route sign message.")
 		quit(1)
@@ -103,10 +111,14 @@ func _validate_map_data() -> void:
 			quit(1)
 			return
 
+	_validate_route_interactable_data(route_data, "Route1.tres", 4, 2, 2)
+
+
+func _validate_route_interactable_data(route_data: Resource, route_label: String, minimum_interactables: int, minimum_trainers: int, minimum_pickups: int) -> void:
 	var interactable_entries: Array[Dictionary] = route_data.get_interactable_entries()
 
-	if interactable_entries.size() < 4:
-		push_error("Route1.tres should include multiple authored interactables.")
+	if interactable_entries.size() < minimum_interactables:
+		push_error("%s should include enough authored interactables." % route_label)
 		quit(1)
 		return
 
@@ -117,22 +129,22 @@ func _validate_map_data() -> void:
 		var interactable_cell: Vector2i = entry.get("cell", Vector2i(-999, -999))
 
 		if str(entry.get("name", "")).is_empty():
-			push_error("Route1.tres contains an unnamed interactable.")
+			push_error("%s contains an unnamed interactable." % route_label)
 			quit(1)
 			return
 
 		if str(entry.get("dialogue", "")).is_empty():
-			push_error("Route1.tres contains an interactable without dialogue.")
+			push_error("%s contains an interactable without dialogue." % route_label)
 			quit(1)
 			return
 
 		if not route_data.is_inside_map(interactable_cell):
-			push_error("Route1.tres contains an interactable outside the map: %s." % str(interactable_cell))
+			push_error("%s contains an interactable outside the map: %s." % [route_label, str(interactable_cell)])
 			quit(1)
 			return
 
 		if route_data.get_tile_code(interactable_cell) == "#":
-			push_error("Route1.tres places an interactable on a wall tile: %s." % str(interactable_cell))
+			push_error("%s places an interactable on a wall tile: %s." % [route_label, str(interactable_cell)])
 			quit(1)
 			return
 
@@ -140,12 +152,12 @@ func _validate_map_data() -> void:
 			trainer_count += 1
 
 			if entry.get("battle_monster", null) == null or int(entry.get("battle_level", 0)) <= 0:
-				push_error("Route1.tres contains a trainer without battle data.")
+				push_error("%s contains a trainer without battle data." % route_label)
 				quit(1)
 				return
 
 			if entry.get("sight_direction", Vector2i.ZERO) == Vector2i.ZERO or int(entry.get("sight_range", 0)) <= 0:
-				push_error("Route1.tres contains a trainer without sight data.")
+				push_error("%s contains a trainer without sight data." % route_label)
 				quit(1)
 				return
 
@@ -153,16 +165,16 @@ func _validate_map_data() -> void:
 			pickup_count += 1
 
 			if str(entry.get("item_key", "")).is_empty() or int(entry.get("item_count", 0)) <= 0:
-				push_error("Route1.tres contains a pickup without item data.")
+				push_error("%s contains a pickup without item data." % route_label)
 				quit(1)
 				return
 
-	if trainer_count < 2:
-		push_error("Route1.tres should include multiple authored trainer battles.")
+	if trainer_count < minimum_trainers:
+		push_error("%s should include enough authored trainer battles." % route_label)
 		quit(1)
 
-	if pickup_count < 2:
-		push_error("Route1.tres should include multiple authored pickups.")
+	if pickup_count < minimum_pickups:
+		push_error("%s should include enough authored pickups." % route_label)
 		quit(1)
 
 
@@ -239,6 +251,49 @@ func _validate_scene_content() -> void:
 	var collected_pickups: Array[String] = ["route1_capsules"]
 	overworld.set_collected_interactables(collected_pickups)
 	await _validate_collected_pickup_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(12, 3), Vector2i.UP, "empty")
+	overworld.queue_free()
+
+
+func _validate_route_2_scene_content() -> void:
+	var route_2_data = load("res://data/overworld/Route2.tres")
+	var overworld := await _instantiate_overworld(route_2_data)
+	var player := overworld.find_child("Player", true, false) as PlayerController
+	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
+	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
+	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
+
+	if player == null or tile_map == null or dialogue_panel == null or dialogue_label == null:
+		push_error("Route 2 scene validation could not find required scene nodes.")
+		quit(1)
+		return
+
+	player.grass_encounter_chance = 0.0
+	var start_cell := tile_map.local_to_map(tile_map.to_local(player.global_position))
+
+	if start_cell != Vector2i(1, 6):
+		push_error("Route 2 scene did not start at the authored start cell.")
+		quit(1)
+		return
+
+	if player.encounter_table == null or player.encounter_table != route_2_data.encounter_table:
+		push_error("Route 2 scene did not assign its encounter table to the player.")
+		quit(1)
+		return
+
+	await _validate_blocked_dialogue_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(4, 9), Vector2i.UP, "Drifter Nia")
+	await _close_dialogue(dialogue_panel, player)
+	overworld.trainer_battle_triggered.connect(_on_trainer_battle_triggered)
+	overworld.pickup_collected.connect(_on_pickup_collected)
+	await _validate_trainer_interactable(player, tile_map, Vector2i(12, 8), Vector2i.LEFT, 6)
+	var defeated_trainers: Array[String] = ["trainer_pike"]
+	overworld.set_defeated_interactables(defeated_trainers)
+	await _validate_defeated_trainer_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(12, 8), Vector2i.LEFT, "type matchups")
+	await _close_dialogue(dialogue_panel, player)
+	await _validate_pickup_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(13, 9), Vector2i.DOWN, "route2_capsule", "capture_capsule", 1, "Found a Capture Capsule")
+	await _close_dialogue(dialogue_panel, player)
+	var collected_pickups: Array[String] = ["route2_capsule"]
+	overworld.set_collected_interactables(collected_pickups)
+	await _validate_collected_pickup_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(13, 9), Vector2i.DOWN, "empty")
 	overworld.queue_free()
 
 
@@ -550,7 +605,7 @@ func _validate_game_manager_pickup_flow() -> void:
 	game_root.queue_free()
 
 
-func _instantiate_overworld() -> Node:
+func _instantiate_overworld(map_override: Resource = null) -> Node:
 	var overworld_scene := load("res://scenes/overworld/Overworld.tscn") as PackedScene
 
 	if overworld_scene == null:
@@ -559,6 +614,10 @@ func _instantiate_overworld() -> Node:
 		return null
 
 	var overworld := overworld_scene.instantiate()
+
+	if map_override != null:
+		overworld.set("map_data", map_override)
+
 	get_root().add_child(overworld)
 	await process_frame
 	await process_frame

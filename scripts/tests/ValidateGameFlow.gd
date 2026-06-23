@@ -20,6 +20,8 @@ func _run() -> void:
 		return
 
 	var game_root := game_root_scene.instantiate()
+	game_root.auto_load_save = false
+	game_root.auto_save_after_battle = false
 	get_root().add_child(game_root)
 	await process_frame
 
