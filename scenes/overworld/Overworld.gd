@@ -566,6 +566,12 @@ func _get_interaction_prompt_text() -> String:
 		return "Read"
 
 	if map_data != null and map_data.has_method("get_inspect_message") and not map_data.get_inspect_message(target_cell).is_empty():
+		if map_data.has_method("get_inspect_prompt"):
+			var inspect_prompt := str(map_data.get_inspect_prompt(target_cell))
+
+			if not inspect_prompt.is_empty():
+				return inspect_prompt
+
 		return "Check"
 
 	var tile_data := _get_cell_tile_data_for_interaction(target_cell) if _ground_tile_map != null else null

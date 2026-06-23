@@ -118,6 +118,11 @@ func _validate_map_data() -> void:
 		quit(1)
 		return
 
+	if route_data.get_inspect_prompt(Vector2i(2, 1)) != "Knock":
+		push_error("Route1.tres should use a custom cottage inspect prompt.")
+		quit(1)
+		return
+
 	for sign_entry in route_data.sign_messages:
 		var sign_cell: Vector2i = sign_entry.get("cell", Vector2i(-999, -999))
 		var sign_tile_code := ""
@@ -307,7 +312,7 @@ func _validate_scene_content() -> void:
 	await _close_dialogue(dialogue_panel, player)
 	await _validate_blocked_dialogue_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(6, 9), Vector2i.DOWN, "Keeper Sol")
 	await _close_dialogue(dialogue_panel, player)
-	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(2, 2), Vector2i.UP, "Check")
+	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(2, 2), Vector2i.UP, "Knock")
 	await _validate_inspectable_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(2, 2), Vector2i.UP, "route keeper")
 	await _close_dialogue(dialogue_panel, player)
 

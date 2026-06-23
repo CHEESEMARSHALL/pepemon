@@ -79,6 +79,18 @@ func get_inspect_message(cell: Vector2i) -> String:
 	return ""
 
 
+func get_inspect_prompt(cell: Vector2i) -> String:
+	for inspect_entry in inspect_messages:
+		if not inspect_entry is Dictionary:
+			continue
+
+		if inspect_entry.get("cell", Vector2i(-999, -999)) == cell:
+			var prompt := str(inspect_entry.get("prompt", "Check"))
+			return "Check" if prompt.is_empty() else prompt
+
+	return ""
+
+
 func get_interactable_entries() -> Array[Dictionary]:
 	return interactables
 
