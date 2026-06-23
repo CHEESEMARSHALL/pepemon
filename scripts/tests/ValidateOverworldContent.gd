@@ -430,18 +430,26 @@ func _validate_route_transition_flow() -> void:
 	var game_root := game_root_scene.instantiate()
 	game_root.auto_load_save = false
 	game_root.auto_save_after_battle = false
+	game_root.route_transition_fade_time = 0.01
 	get_root().add_child(game_root)
 	await process_frame
 	await process_frame
 
 	var scene_root := game_root.get_node("%SceneRoot")
+	var route_transition_fade := game_root.get_node("%RouteTransitionFade") as ColorRect
+
+	if route_transition_fade == null:
+		push_error("GameRoot is missing the route transition fade overlay.")
+		quit(1)
+		return
+
 	var overworld := scene_root.get_child(0)
 	var player := overworld.find_child("Player", true, false) as PlayerController
 	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
 	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(14, 6)))
 	overworld.call("_on_player_step_finished", Vector2i(14, 6))
-	await process_frame
-	await process_frame
+	await _wait_for_current_map(scene_root, "Pepemon Route 2")
+	await _wait_for_route_transition_idle(game_root)
 
 	overworld = scene_root.get_child(0)
 	player = overworld.find_child("Player", true, false) as PlayerController
@@ -459,9 +467,14 @@ func _validate_route_transition_flow() -> void:
 		quit(1)
 		return
 
+	if route_transition_fade.visible or not is_zero_approx(route_transition_fade.modulate.a):
+		push_error("Route transition fade did not hide after entering Route 2.")
+		quit(1)
+		return
+
 	overworld.call("_on_player_step_finished", Vector2i(1, 6))
-	await process_frame
-	await process_frame
+	await _wait_for_current_map(scene_root, "Pepemon Route 1")
+	await _wait_for_route_transition_idle(game_root)
 
 	overworld = scene_root.get_child(0)
 	player = overworld.find_child("Player", true, false) as PlayerController
@@ -692,6 +705,34 @@ func _instantiate_overworld(map_override: Resource = null) -> Node:
 	await process_frame
 	await process_frame
 	return overworld
+
+
+func _wait_for_current_map(scene_root: Node, expected_map_name: String) -> void:
+	for _frame in range(60):
+		await process_frame
+
+		if scene_root.get_child_count() <= 0:
+			continue
+
+		var active_scene := scene_root.get_child(0)
+		var map_data = active_scene.get("map_data")
+
+		if map_data != null and str(map_data.map_name) == expected_map_name:
+			return
+
+	push_error("Timed out waiting for current map '%s'." % expected_map_name)
+	quit(1)
+
+
+func _wait_for_route_transition_idle(game_root: Node) -> void:
+	for _frame in range(60):
+		await process_frame
+
+		if not bool(game_root.get("_is_route_transitioning")):
+			return
+
+	push_error("Timed out waiting for route transition fade to finish.")
+	quit(1)
 
 
 func _validate_interactable_visual(interactables: Node2D, interactable_name: String, expected_color: Color) -> void:

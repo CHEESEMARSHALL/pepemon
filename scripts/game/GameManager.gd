@@ -13,9 +13,11 @@ const SaveManagerScript := preload("res://scripts/game/SaveManager.gd")
 @export var auto_save_after_battle := true
 @export_range(0, 99, 1) var starting_potion_count: int = 3
 @export_range(0, 99, 1) var starting_capture_count: int = 3
+@export_range(0.0, 2.0, 0.01) var route_transition_fade_time := 0.12
 @export var potion_item: Resource
 
 @onready var _scene_root := %SceneRoot as Node
+@onready var _route_transition_fade := %RouteTransitionFade as ColorRect
 @onready var _overworld_menu_overlay := %OverworldMenuOverlay as Control
 @onready var _menu_title_label := %MenuTitleLabel as Label
 @onready var _menu_content_label := %MenuContentLabel as Label
@@ -45,6 +47,7 @@ var _pending_overworld_start_cell := Vector2i(-999, -999)
 var _current_player_cell := Vector2i(-999, -999)
 var _active_menu_tab := "party"
 var _pending_trainer_id := ""
+var _is_route_transitioning := false
 
 
 func _ready() -> void:
@@ -166,7 +169,7 @@ func _connect_overworld(scene: Node) -> void:
 
 
 func toggle_overworld_menu() -> void:
-	if _current_scene == null or _current_scene is BattleUI:
+	if _current_scene == null or _current_scene is BattleUI or _is_route_transitioning:
 		return
 
 	if _overworld_menu_overlay.visible:
@@ -674,13 +677,37 @@ func _collect_pickup(pickup_id: String, item_key: String, item_count: int, _item
 
 
 func _change_route(target_map: Resource, target_start_cell: Vector2i) -> void:
-	if target_map == null:
+	if target_map == null or _is_route_transitioning:
 		return
 
+	_is_route_transitioning = true
+	_set_overworld_movement_enabled(false)
+	await _fade_route_transition(1.0)
 	_current_map_data = target_map
 	_pending_overworld_start_cell = target_start_cell
 	_current_player_cell = target_start_cell
 	show_overworld()
+	await _fade_route_transition(0.0)
+	_is_route_transitioning = false
+	_set_overworld_movement_enabled(true)
+
+
+func _fade_route_transition(target_alpha: float) -> void:
+	if _route_transition_fade == null:
+		return
+
+	if route_transition_fade_time <= 0.0:
+		_route_transition_fade.modulate.a = target_alpha
+		_route_transition_fade.visible = target_alpha > 0.0
+		return
+
+	_route_transition_fade.visible = true
+	var tween := create_tween()
+	tween.tween_property(_route_transition_fade, "modulate:a", target_alpha, route_transition_fade_time)
+	await tween.finished
+
+	if is_zero_approx(target_alpha):
+		_route_transition_fade.visible = false
 
 
 func _on_player_step_finished(cell: Vector2i) -> void:

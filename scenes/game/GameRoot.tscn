@@ -20,6 +20,21 @@ potion_item = ExtResource("6_potion")
 [node name="SceneRoot" type="Node" parent="."]
 unique_name_in_owner = true
 
+[node name="RouteTransitionLayer" type="CanvasLayer" parent="."]
+layer = 20
+
+[node name="RouteTransitionFade" type="ColorRect" parent="RouteTransitionLayer"]
+unique_name_in_owner = true
+visible = false
+modulate = Color(1, 1, 1, 0)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
 [node name="OverworldMenuLayer" type="CanvasLayer" parent="."]
 
 [node name="OverworldMenuOverlay" type="Control" parent="OverworldMenuLayer"]
