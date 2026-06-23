@@ -183,18 +183,21 @@ func _validate_scene_content() -> void:
 	var player := overworld.find_child("Player", true, false) as PlayerController
 	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
 	var hint_label := overworld.get_node("%HintLabel") as Label
+	var debug_label := overworld.get_node("%DebugLabel") as Label
 	var interactables := overworld.get_node("%Interactables") as Node2D
 	var interaction_prompt := overworld.get_node("%InteractionPrompt") as PanelContainer
 	var interaction_prompt_label := overworld.get_node("%InteractionPromptLabel") as Label
 	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
 	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
 
-	if player == null or tile_map == null or hint_label == null or interactables == null or interaction_prompt == null or interaction_prompt_label == null or dialogue_panel == null or dialogue_label == null:
+	if player == null or tile_map == null or hint_label == null or debug_label == null or interactables == null or interaction_prompt == null or interaction_prompt_label == null or dialogue_panel == null or dialogue_label == null:
 		push_error("Overworld content validation could not find required scene nodes.")
 		quit(1)
 		return
 
 	player.grass_encounter_chance = 0.0
+	overworld.call("_update_debug_hud")
+	await process_frame
 	var start_cell := tile_map.local_to_map(tile_map.to_local(player.global_position))
 
 	if start_cell != Vector2i(8, 8):
@@ -212,6 +215,7 @@ func _validate_scene_content() -> void:
 		quit(1)
 		return
 
+	_validate_debug_hud(debug_label, "Pepemon Route 1", Vector2i(8, 8), "Dirt", 0)
 	var follow_camera := player.get_node_or_null("FollowCamera") as Camera2D
 
 	if follow_camera == null or not follow_camera.enabled:
@@ -246,6 +250,13 @@ func _validate_scene_content() -> void:
 		quit(1)
 		return
 
+	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(9, 8)))
+	overworld.call("_update_debug_hud")
+	await process_frame
+	_validate_debug_hud(debug_label, "Pepemon Route 1", Vector2i(9, 8), "Grass", 0)
+	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(8, 8)))
+	overworld.call("_update_debug_hud")
+	await process_frame
 	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(8, 8), Vector2i.LEFT, "Read")
 	player.interact()
 	await process_frame
@@ -295,18 +306,21 @@ func _validate_route_2_scene_content() -> void:
 	var player := overworld.find_child("Player", true, false) as PlayerController
 	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
 	var hint_label := overworld.get_node("%HintLabel") as Label
+	var debug_label := overworld.get_node("%DebugLabel") as Label
 	var interactables := overworld.get_node("%Interactables") as Node2D
 	var interaction_prompt := overworld.get_node("%InteractionPrompt") as PanelContainer
 	var interaction_prompt_label := overworld.get_node("%InteractionPromptLabel") as Label
 	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
 	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
 
-	if player == null or tile_map == null or hint_label == null or interactables == null or interaction_prompt == null or interaction_prompt_label == null or dialogue_panel == null or dialogue_label == null:
+	if player == null or tile_map == null or hint_label == null or debug_label == null or interactables == null or interaction_prompt == null or interaction_prompt_label == null or dialogue_panel == null or dialogue_label == null:
 		push_error("Route 2 scene validation could not find required scene nodes.")
 		quit(1)
 		return
 
 	player.grass_encounter_chance = 0.0
+	overworld.call("_update_debug_hud")
+	await process_frame
 	var start_cell := tile_map.local_to_map(tile_map.to_local(player.global_position))
 
 	if start_cell != Vector2i(1, 6):
@@ -324,6 +338,7 @@ func _validate_route_2_scene_content() -> void:
 		quit(1)
 		return
 
+	_validate_debug_hud(debug_label, "Pepemon Route 2", Vector2i(1, 6), "Dirt", 0)
 	_validate_interactable_visual(interactables, "DrifterNia", Color(0.24, 0.36, 0.86, 1.0))
 	_validate_interactable_visual(interactables, "TrainerPike", Color(0.92, 0.52, 0.16, 1.0))
 	_validate_interactable_visual(interactables, "Route2Capsule", Color(0.56, 0.28, 0.86, 1.0))
@@ -696,6 +711,34 @@ func _validate_interactable_visual(interactables: Node2D, interactable_name: Str
 
 	if not body.color.is_equal_approx(expected_color):
 		push_error("%s has the wrong placeholder color: %s." % [interactable_name, str(body.color)])
+		quit(1)
+
+
+func _validate_debug_hud(debug_label: Label, expected_map_name: String, expected_cell: Vector2i, expected_terrain: String, expected_encounter_percent: int) -> void:
+	if debug_label == null:
+		push_error("Overworld debug HUD label was not found.")
+		quit(1)
+		return
+
+	var text := debug_label.text
+
+	if not text.contains("Map: %s" % expected_map_name):
+		push_error("Debug HUD did not show map name '%s': %s." % [expected_map_name, text])
+		quit(1)
+		return
+
+	if not text.contains("Cell: %s" % str(expected_cell)):
+		push_error("Debug HUD did not show player cell '%s': %s." % [str(expected_cell), text])
+		quit(1)
+		return
+
+	if not text.contains("Terrain: %s" % expected_terrain):
+		push_error("Debug HUD did not show terrain '%s': %s." % [expected_terrain, text])
+		quit(1)
+		return
+
+	if not text.contains("Encounter: %d%%" % expected_encounter_percent):
+		push_error("Debug HUD did not show encounter chance '%d%%': %s." % [expected_encounter_percent, text])
 		quit(1)
 
 

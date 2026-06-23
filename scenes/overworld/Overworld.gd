@@ -28,6 +28,7 @@ const TERRAIN_NPC := "NPC"
 @onready var _player := %Player as PlayerController
 @onready var _ground_tile_map := %GroundTileMap as TileMap
 @onready var _hint_label := %HintLabel as Label
+@onready var _debug_label := %DebugLabel as Label
 @onready var _interaction_prompt := %InteractionPrompt as PanelContainer
 @onready var _interaction_prompt_label := %InteractionPromptLabel as Label
 @onready var _dialogue_panel := %DialoguePanel as PanelContainer
@@ -48,6 +49,7 @@ func _ready() -> void:
 	_player.step_finished.connect(_on_player_step_finished)
 	_player.facing_changed.connect(_on_player_facing_changed)
 	_dialogue_panel.visible = false
+	_update_debug_hud()
 	_update_interaction_prompt()
 
 
@@ -232,6 +234,8 @@ func _on_player_interaction_requested(cell: Vector2i) -> void:
 
 
 func _on_player_step_finished(cell: Vector2i) -> void:
+	_update_debug_hud()
+
 	if not _active_sight_trainer_id.is_empty() or _dialogue_panel.visible:
 		return
 
@@ -467,3 +471,38 @@ func _get_interaction_prompt_text() -> String:
 		return "Read"
 
 	return ""
+
+
+func _update_debug_hud() -> void:
+	if _debug_label == null or _player == null:
+		return
+
+	var player_cell := get_player_cell()
+	var map_name := "Unknown"
+
+	if map_data != null:
+		map_name = str(map_data.map_name)
+
+	_debug_label.text = "Map: %s\nCell: %s\nTerrain: %s\nEncounter: %d%%" % [
+		map_name,
+		str(player_cell),
+		_get_current_terrain_name(player_cell),
+		roundi(_player.grass_encounter_chance * 100.0),
+	]
+
+
+func _get_current_terrain_name(cell: Vector2i) -> String:
+	if _ground_tile_map == null:
+		return "Unknown"
+
+	var tile_data := _ground_tile_map.get_cell_tile_data(0, cell)
+
+	if tile_data == null:
+		return "Empty"
+
+	var terrain = tile_data.get_custom_data(TERRAIN_DATA_KEY)
+
+	if terrain == null or str(terrain).is_empty():
+		return "Unknown"
+
+	return str(terrain)
