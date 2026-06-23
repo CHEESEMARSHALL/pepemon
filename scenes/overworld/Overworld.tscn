@@ -26,6 +26,13 @@ offset_right = 6.0
 offset_bottom = 8.0
 color = Color(0.95, 0.18, 0.18, 1)
 
+[node name="FacingMarker" type="ColorRect" parent="Player"]
+offset_left = -7.0
+offset_top = -2.0
+offset_right = -4.0
+offset_bottom = 2.0
+color = Color(0.08, 0.08, 0.1, 1)
+
 [node name="FollowCamera" type="Camera2D" parent="Player"]
 enabled = true
 zoom = Vector2(3, 3)

@@ -27,6 +27,7 @@ var _facing_direction := Vector2i.LEFT
 var _rng := RandomNumberGenerator.new()
 
 @onready var _tile_map := get_node_or_null(tile_map_path) as TileMap
+@onready var _facing_marker := get_node_or_null("FacingMarker") as ColorRect
 
 
 func _ready() -> void:
@@ -36,6 +37,7 @@ func _ready() -> void:
 		await get_tree().process_frame
 
 	_snap_to_grid()
+	_update_facing_marker()
 
 
 func _process(_delta: float) -> void:
@@ -50,7 +52,7 @@ func _process(_delta: float) -> void:
 	if direction == Vector2i.ZERO:
 		return
 
-	_facing_direction = direction
+	_set_facing_direction(direction)
 	_step(direction)
 
 
@@ -69,6 +71,14 @@ func interact() -> void:
 
 	var current_cell := _tile_map.local_to_map(_tile_map.to_local(global_position))
 	interaction_requested.emit(current_cell + _facing_direction)
+
+
+func set_facing_direction(direction: Vector2i) -> void:
+	_set_facing_direction(direction)
+
+
+func get_facing_direction() -> Vector2i:
+	return _facing_direction
 
 
 func _get_input_direction() -> Vector2i:
@@ -104,6 +114,41 @@ func _get_target_position(direction: Vector2i) -> Vector2:
 		return _tile_map.to_global(_tile_map.map_to_local(target_cell))
 
 	return global_position + Vector2(direction) * fallback_cell_size
+
+
+func _set_facing_direction(direction: Vector2i) -> void:
+	if direction == Vector2i.ZERO:
+		return
+
+	_facing_direction = direction
+	_update_facing_marker()
+
+
+func _update_facing_marker() -> void:
+	if _facing_marker == null:
+		return
+
+	var marker_size := Vector2(3, 4)
+	var half_size := marker_size * 0.5
+	var center := Vector2.ZERO
+
+	if _facing_direction == Vector2i.RIGHT:
+		center = Vector2(5.5, 0)
+	elif _facing_direction == Vector2i.UP:
+		center = Vector2(0, -6.5)
+		marker_size = Vector2(4, 3)
+		half_size = marker_size * 0.5
+	elif _facing_direction == Vector2i.DOWN:
+		center = Vector2(0, 6.5)
+		marker_size = Vector2(4, 3)
+		half_size = marker_size * 0.5
+	else:
+		center = Vector2(-5.5, 0)
+
+	_facing_marker.offset_left = center.x - half_size.x
+	_facing_marker.offset_top = center.y - half_size.y
+	_facing_marker.offset_right = center.x + half_size.x
+	_facing_marker.offset_bottom = center.y + half_size.y
 
 
 func _on_step_finished() -> void:

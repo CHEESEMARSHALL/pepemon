@@ -217,6 +217,7 @@ func _validate_scene_content() -> void:
 		quit(1)
 		return
 
+	await _validate_player_facing_marker(player)
 	_validate_interactable_visual(interactables, "ScoutMira", Color(0.24, 0.36, 0.86, 1.0))
 	_validate_interactable_visual(interactables, "TrainerRook", Color(0.92, 0.52, 0.16, 1.0))
 	_validate_interactable_visual(interactables, "Route1Potion", Color(0.56, 0.28, 0.86, 1.0))
@@ -675,6 +676,34 @@ func _validate_interactable_visual(interactables: Node2D, interactable_name: Str
 	if not body.color.is_equal_approx(expected_color):
 		push_error("%s has the wrong placeholder color: %s." % [interactable_name, str(body.color)])
 		quit(1)
+
+
+func _validate_player_facing_marker(player: PlayerController) -> void:
+	var marker := player.get_node_or_null("FacingMarker") as ColorRect
+
+	if marker == null:
+		push_error("Player is missing the facing marker visual.")
+		quit(1)
+		return
+
+	player.set_facing_direction(Vector2i.RIGHT)
+	await process_frame
+
+	if not is_equal_approx(marker.offset_left, 4.0) or not is_equal_approx(marker.offset_right, 7.0):
+		push_error("Facing marker did not move to the right edge.")
+		quit(1)
+		return
+
+	player.set_facing_direction(Vector2i.UP)
+	await process_frame
+
+	if not is_equal_approx(marker.offset_top, -8.0) or not is_equal_approx(marker.offset_bottom, -5.0):
+		push_error("Facing marker did not move to the top edge.")
+		quit(1)
+		return
+
+	player.set_facing_direction(Vector2i.LEFT)
+	await process_frame
 
 
 func _validate_blocked_dialogue_interactable(
