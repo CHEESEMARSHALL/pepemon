@@ -27,6 +27,7 @@ const TERRAIN_NPC := "NPC"
 
 @onready var _player := %Player as PlayerController
 @onready var _ground_tile_map := %GroundTileMap as TileMap
+@onready var _hint_label := %HintLabel as Label
 @onready var _dialogue_panel := %DialoguePanel as PanelContainer
 @onready var _dialogue_label := %DialogueLabel as Label
 @onready var _interactables := %Interactables as Node2D
@@ -75,6 +76,9 @@ func _setup_map() -> void:
 	if map_data == null:
 		push_error("Overworld requires map_data.")
 		return
+
+	if _hint_label != null:
+		_hint_label.text = map_data.map_name
 
 	for y in range(map_data.get_height()):
 		for x in range(map_data.get_width()):

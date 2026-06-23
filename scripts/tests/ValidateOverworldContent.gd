@@ -182,10 +182,11 @@ func _validate_scene_content() -> void:
 	var overworld := await _instantiate_overworld()
 	var player := overworld.find_child("Player", true, false) as PlayerController
 	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
+	var hint_label := overworld.get_node("%HintLabel") as Label
 	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
 	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
 
-	if player == null or tile_map == null or dialogue_panel == null or dialogue_label == null:
+	if player == null or tile_map == null or hint_label == null or dialogue_panel == null or dialogue_label == null:
 		push_error("Overworld content validation could not find required scene nodes.")
 		quit(1)
 		return
@@ -200,6 +201,18 @@ func _validate_scene_content() -> void:
 
 	if player.encounter_table == null or player.encounter_table != overworld.get("map_data").encounter_table:
 		push_error("Overworld did not assign the current map encounter table to the player.")
+		quit(1)
+		return
+
+	if hint_label.text != "Pepemon Route 1":
+		push_error("Overworld did not show the current Route 1 map name.")
+		quit(1)
+		return
+
+	var follow_camera := player.get_node_or_null("FollowCamera") as Camera2D
+
+	if follow_camera == null or not follow_camera.enabled:
+		push_error("Overworld player is missing an enabled follow camera.")
 		quit(1)
 		return
 
@@ -259,10 +272,11 @@ func _validate_route_2_scene_content() -> void:
 	var overworld := await _instantiate_overworld(route_2_data)
 	var player := overworld.find_child("Player", true, false) as PlayerController
 	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
+	var hint_label := overworld.get_node("%HintLabel") as Label
 	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
 	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
 
-	if player == null or tile_map == null or dialogue_panel == null or dialogue_label == null:
+	if player == null or tile_map == null or hint_label == null or dialogue_panel == null or dialogue_label == null:
 		push_error("Route 2 scene validation could not find required scene nodes.")
 		quit(1)
 		return
@@ -277,6 +291,11 @@ func _validate_route_2_scene_content() -> void:
 
 	if player.encounter_table == null or player.encounter_table != route_2_data.encounter_table:
 		push_error("Route 2 scene did not assign its encounter table to the player.")
+		quit(1)
+		return
+
+	if hint_label.text != "Pepemon Route 2":
+		push_error("Route 2 scene did not show the current map name.")
 		quit(1)
 		return
 

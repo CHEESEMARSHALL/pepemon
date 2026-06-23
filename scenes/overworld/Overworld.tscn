@@ -19,7 +19,21 @@ position = Vector2(128, 128)
 script = ExtResource("1_player_controller")
 tile_map_path = NodePath("../GroundTileMap")
 
+[node name="PlaceholderSprite" type="ColorRect" parent="Player"]
+offset_left = -6.0
+offset_top = -8.0
+offset_right = 6.0
+offset_bottom = 8.0
+color = Color(0.95, 0.18, 0.18, 1)
+
+[node name="FollowCamera" type="Camera2D" parent="Player"]
+enabled = true
+zoom = Vector2(3, 3)
+position_smoothing_enabled = true
+position_smoothing_speed = 8.0
+
 [node name="HintLabel" type="Label" parent="."]
+unique_name_in_owner = true
 offset_left = 24.0
 offset_top = 24.0
 offset_right = 584.0
