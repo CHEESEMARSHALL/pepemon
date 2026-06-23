@@ -48,6 +48,16 @@ func _validate_map_data() -> void:
 		quit(1)
 		return
 
+	if route_data.get_tile_code(Vector2i(0, 0)) != "T":
+		push_error("Route1.tres should use tree tiles for the first-area border.")
+		quit(1)
+		return
+
+	if route_data.get_tile_code(Vector2i(2, 1)) != "H":
+		push_error("Route1.tres should include a small house block for first-area worldbuilding.")
+		quit(1)
+		return
+
 	var route_transition: Dictionary = route_data.get_transition_entry(Vector2i(14, 6))
 
 	if route_transition.is_empty() or str(route_transition.get("target_map_path", "")).is_empty():
@@ -216,6 +226,8 @@ func _validate_scene_content() -> void:
 		return
 
 	_validate_debug_hud(debug_label, "Pepemon Route 1", Vector2i(8, 8), "Dirt", 0)
+	_validate_tile_terrain(tile_map, Vector2i(0, 0), "Tree", true)
+	_validate_tile_terrain(tile_map, Vector2i(2, 1), "House", true)
 	var follow_camera := player.get_node_or_null("FollowCamera") as Camera2D
 
 	if follow_camera == null or not follow_camera.enabled:
@@ -779,6 +791,27 @@ func _validate_alert_marker(interactables: Node2D, interactable_name: String, ex
 
 	if alert_marker.visible != expected_visible:
 		push_error("%s alert marker visibility expected %s, got %s." % [interactable_name, str(expected_visible), str(alert_marker.visible)])
+		quit(1)
+
+
+func _validate_tile_terrain(tile_map: TileMap, cell: Vector2i, expected_terrain: String, expected_blocked: bool) -> void:
+	var tile_data := tile_map.get_cell_tile_data(0, cell)
+
+	if tile_data == null:
+		push_error("Expected tile data at %s." % str(cell))
+		quit(1)
+		return
+
+	var terrain := str(tile_data.get_custom_data("terrain"))
+	var blocked := bool(tile_data.get_custom_data("blocked"))
+
+	if terrain != expected_terrain:
+		push_error("Expected %s terrain at %s, got %s." % [expected_terrain, str(cell), terrain])
+		quit(1)
+		return
+
+	if blocked != expected_blocked:
+		push_error("Expected blocked=%s at %s, got %s." % [str(expected_blocked), str(cell), str(blocked)])
 		quit(1)
 
 

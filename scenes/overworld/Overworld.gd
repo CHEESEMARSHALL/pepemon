@@ -7,15 +7,19 @@ signal route_transition_requested(target_map: Resource, target_start_cell: Vecto
 
 @export var map_data: Resource
 @export var interactable_scene: PackedScene
+@export var route_tile_sheet: Texture2D
 @export var player_start_cell_override := Vector2i(-999, -999)
 
 const CELL_SIZE := Vector2i(16, 16)
 const SOURCE_ID := 0
+const ROUTE_TILE_SHEET_PATH := "res://assets/tiles/route1/route1_tiles.png"
 const DIRT_TILE := Vector2i(0, 0)
 const GRASS_TILE := Vector2i(1, 0)
 const WALL_TILE := Vector2i(2, 0)
 const SIGN_TILE := Vector2i(3, 0)
 const NPC_TILE := Vector2i(4, 0)
+const TREE_TILE := Vector2i(5, 0)
+const HOUSE_TILE := Vector2i(6, 0)
 const TERRAIN_DATA_KEY := "terrain"
 const BLOCKED_DATA_KEY := "blocked"
 const INTERACTION_TEXT_DATA_KEY := "interaction_text"
@@ -24,6 +28,8 @@ const TERRAIN_GRASS := "Grass"
 const TERRAIN_WALL := "Wall"
 const TERRAIN_SIGN := "Sign"
 const TERRAIN_NPC := "NPC"
+const TERRAIN_TREE := "Tree"
+const TERRAIN_HOUSE := "House"
 
 @onready var _player := %Player as PlayerController
 @onready var _ground_tile_map := %GroundTileMap as TileMap
@@ -104,6 +110,10 @@ func _get_tile_atlas_coords(tile_code: String) -> Vector2i:
 			return GRASS_TILE
 		"S":
 			return SIGN_TILE
+		"T":
+			return TREE_TILE
+		"H":
+			return HOUSE_TILE
 		_:
 			return DIRT_TILE
 
@@ -121,14 +131,7 @@ func _create_route_tile_set() -> TileSet:
 	tile_set.set_custom_data_layer_name(2, INTERACTION_TEXT_DATA_KEY)
 	tile_set.set_custom_data_layer_type(2, TYPE_STRING)
 
-	var image := Image.create(CELL_SIZE.x * 5, CELL_SIZE.y, false, Image.FORMAT_RGBA8)
-	image.fill_rect(Rect2i(Vector2i.ZERO, CELL_SIZE), Color(0.45, 0.32, 0.18))
-	image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x, 0), CELL_SIZE), Color(0.18, 0.62, 0.22))
-	image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x * 2, 0), CELL_SIZE), Color(0.18, 0.18, 0.2))
-	image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x * 3, 0), CELL_SIZE), Color(0.78, 0.68, 0.28))
-	image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x * 4, 0), CELL_SIZE), Color(0.24, 0.36, 0.86))
-
-	var texture := ImageTexture.create_from_image(image)
+	var texture := _get_route_tile_texture()
 	var source := TileSetAtlasSource.new()
 	source.texture = texture
 	source.texture_region_size = CELL_SIZE
@@ -137,6 +140,8 @@ func _create_route_tile_set() -> TileSet:
 	source.create_tile(WALL_TILE)
 	source.create_tile(SIGN_TILE)
 	source.create_tile(NPC_TILE)
+	source.create_tile(TREE_TILE)
+	source.create_tile(HOUSE_TILE)
 
 	tile_set.add_source(source, SOURCE_ID)
 	source.get_tile_data(DIRT_TILE, 0).set_custom_data(TERRAIN_DATA_KEY, TERRAIN_DIRT)
@@ -149,7 +154,32 @@ func _create_route_tile_set() -> TileSet:
 	source.get_tile_data(SIGN_TILE, 0).set_custom_data(BLOCKED_DATA_KEY, true)
 	source.get_tile_data(NPC_TILE, 0).set_custom_data(TERRAIN_DATA_KEY, TERRAIN_NPC)
 	source.get_tile_data(NPC_TILE, 0).set_custom_data(BLOCKED_DATA_KEY, true)
+	source.get_tile_data(TREE_TILE, 0).set_custom_data(TERRAIN_DATA_KEY, TERRAIN_TREE)
+	source.get_tile_data(TREE_TILE, 0).set_custom_data(BLOCKED_DATA_KEY, true)
+	source.get_tile_data(HOUSE_TILE, 0).set_custom_data(TERRAIN_DATA_KEY, TERRAIN_HOUSE)
+	source.get_tile_data(HOUSE_TILE, 0).set_custom_data(BLOCKED_DATA_KEY, true)
 	return tile_set
+
+
+func _get_route_tile_texture() -> Texture2D:
+	if route_tile_sheet != null and route_tile_sheet.get_width() >= CELL_SIZE.x * 7:
+		return route_tile_sheet
+
+	if ResourceLoader.exists(ROUTE_TILE_SHEET_PATH):
+		var loaded_texture := load(ROUTE_TILE_SHEET_PATH) as Texture2D
+
+		if loaded_texture != null and loaded_texture.get_width() >= CELL_SIZE.x * 7:
+			return loaded_texture
+
+	var image := Image.create(CELL_SIZE.x * 7, CELL_SIZE.y, false, Image.FORMAT_RGBA8)
+	image.fill_rect(Rect2i(Vector2i.ZERO, CELL_SIZE), Color(0.45, 0.32, 0.18))
+	image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x, 0), CELL_SIZE), Color(0.18, 0.62, 0.22))
+	image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x * 2, 0), CELL_SIZE), Color(0.18, 0.18, 0.2))
+	image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x * 3, 0), CELL_SIZE), Color(0.78, 0.68, 0.28))
+	image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x * 4, 0), CELL_SIZE), Color(0.24, 0.36, 0.86))
+	image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x * 5, 0), CELL_SIZE), Color(0.08, 0.38, 0.14))
+	image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x * 6, 0), CELL_SIZE), Color(0.58, 0.2, 0.16))
+	return ImageTexture.create_from_image(image)
 
 
 func _setup_interactables() -> void:
