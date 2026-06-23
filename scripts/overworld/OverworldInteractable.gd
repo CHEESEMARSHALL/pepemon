@@ -23,8 +23,19 @@ enum InteractionAction {
 @export var pickup_item_name := ""
 @export_range(1, 99, 1) var pickup_count := 1
 
+const DIALOGUE_COLOR := Color(0.24, 0.36, 0.86, 1.0)
+const TRAINER_COLOR := Color(0.92, 0.52, 0.16, 1.0)
+const PICKUP_COLOR := Color(0.56, 0.28, 0.86, 1.0)
+const INACTIVE_COLOR := Color(0.45, 0.45, 0.5, 1.0)
+
 var is_defeated := false
 var is_collected := false
+
+@onready var _body := get_node_or_null("Body") as ColorRect
+
+
+func _ready() -> void:
+	refresh_visual()
 
 
 func place_on_tile_map(tile_map: TileMap) -> void:
@@ -32,6 +43,7 @@ func place_on_tile_map(tile_map: TileMap) -> void:
 		return
 
 	global_position = tile_map.to_global(tile_map.map_to_local(grid_cell))
+	refresh_visual()
 
 
 func get_interaction_text() -> String:
@@ -46,3 +58,26 @@ func get_interaction_text() -> String:
 
 func get_interaction_action() -> int:
 	return interaction_action
+
+
+func refresh_visual() -> void:
+	if _body == null:
+		_body = get_node_or_null("Body") as ColorRect
+
+	if _body == null:
+		return
+
+	_body.color = get_visual_color()
+
+
+func get_visual_color() -> Color:
+	if is_defeated or is_collected:
+		return INACTIVE_COLOR
+
+	match interaction_action:
+		InteractionAction.BATTLE:
+			return TRAINER_COLOR
+		InteractionAction.PICKUP:
+			return PICKUP_COLOR
+		_:
+			return DIALOGUE_COLOR

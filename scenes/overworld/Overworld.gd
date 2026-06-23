@@ -194,6 +194,7 @@ func _spawn_interactables_from_map_data() -> void:
 		interactable.is_defeated = _defeated_interactable_ids.has(interactable.interactable_id)
 		interactable.is_collected = _collected_interactable_ids.has(interactable.interactable_id)
 		_interactables.add_child(interactable)
+		interactable.refresh_visual()
 
 
 func _on_player_interaction_requested(cell: Vector2i) -> void:
@@ -345,6 +346,7 @@ func _handle_interactable(interactable: Node) -> void:
 
 		var pickup_message: String = interactable.get_interaction_text()
 		interactable.is_collected = true
+		interactable.refresh_visual()
 		if not _collected_interactable_ids.has(str(interactable.get("interactable_id"))):
 			_collected_interactable_ids.append(str(interactable.get("interactable_id")))
 
@@ -378,6 +380,7 @@ func set_defeated_interactables(defeated_ids: Array[String]) -> void:
 	for interactable in _interactables_by_cell.values():
 		if interactable != null:
 			interactable.is_defeated = _defeated_interactable_ids.has(str(interactable.get("interactable_id")))
+			interactable.refresh_visual()
 
 
 func set_collected_interactables(collected_ids: Array[String]) -> void:
@@ -386,3 +389,4 @@ func set_collected_interactables(collected_ids: Array[String]) -> void:
 	for interactable in _interactables_by_cell.values():
 		if interactable != null:
 			interactable.is_collected = _collected_interactable_ids.has(str(interactable.get("interactable_id")))
+			interactable.refresh_visual()

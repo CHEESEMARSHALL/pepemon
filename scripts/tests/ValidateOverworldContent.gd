@@ -183,10 +183,11 @@ func _validate_scene_content() -> void:
 	var player := overworld.find_child("Player", true, false) as PlayerController
 	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
 	var hint_label := overworld.get_node("%HintLabel") as Label
+	var interactables := overworld.get_node("%Interactables") as Node2D
 	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
 	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
 
-	if player == null or tile_map == null or hint_label == null or dialogue_panel == null or dialogue_label == null:
+	if player == null or tile_map == null or hint_label == null or interactables == null or dialogue_panel == null or dialogue_label == null:
 		push_error("Overworld content validation could not find required scene nodes.")
 		quit(1)
 		return
@@ -215,6 +216,10 @@ func _validate_scene_content() -> void:
 		push_error("Overworld player is missing an enabled follow camera.")
 		quit(1)
 		return
+
+	_validate_interactable_visual(interactables, "ScoutMira", Color(0.24, 0.36, 0.86, 1.0))
+	_validate_interactable_visual(interactables, "TrainerRook", Color(0.92, 0.52, 0.16, 1.0))
+	_validate_interactable_visual(interactables, "Route1Potion", Color(0.56, 0.28, 0.86, 1.0))
 
 	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(5, 8)))
 	await process_frame
@@ -257,12 +262,14 @@ func _validate_scene_content() -> void:
 	await _validate_trainer_interactable(player, tile_map, Vector2i(11, 10), Vector2i.UP, 5)
 	var defeated_trainers: Array[String] = ["trainer_rook"]
 	overworld.set_defeated_interactables(defeated_trainers)
+	_validate_interactable_visual(interactables, "TrainerRook", Color(0.45, 0.45, 0.5, 1.0))
 	await _validate_defeated_trainer_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(10, 7), Vector2i.UP, "Good match")
 	await _close_dialogue(dialogue_panel, player)
 	await _validate_pickup_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(5, 3), Vector2i.UP, "route1_potion", "potion", 1, "Found a Potion")
 	await _close_dialogue(dialogue_panel, player)
 	var collected_pickups: Array[String] = ["route1_capsules"]
 	overworld.set_collected_interactables(collected_pickups)
+	_validate_interactable_visual(interactables, "Route1Capsules", Color(0.45, 0.45, 0.5, 1.0))
 	await _validate_collected_pickup_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(12, 3), Vector2i.UP, "empty")
 	overworld.queue_free()
 
@@ -273,10 +280,11 @@ func _validate_route_2_scene_content() -> void:
 	var player := overworld.find_child("Player", true, false) as PlayerController
 	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
 	var hint_label := overworld.get_node("%HintLabel") as Label
+	var interactables := overworld.get_node("%Interactables") as Node2D
 	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
 	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
 
-	if player == null or tile_map == null or hint_label == null or dialogue_panel == null or dialogue_label == null:
+	if player == null or tile_map == null or hint_label == null or interactables == null or dialogue_panel == null or dialogue_label == null:
 		push_error("Route 2 scene validation could not find required scene nodes.")
 		quit(1)
 		return
@@ -299,6 +307,10 @@ func _validate_route_2_scene_content() -> void:
 		quit(1)
 		return
 
+	_validate_interactable_visual(interactables, "DrifterNia", Color(0.24, 0.36, 0.86, 1.0))
+	_validate_interactable_visual(interactables, "TrainerPike", Color(0.92, 0.52, 0.16, 1.0))
+	_validate_interactable_visual(interactables, "Route2Capsule", Color(0.56, 0.28, 0.86, 1.0))
+
 	await _validate_blocked_dialogue_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(4, 9), Vector2i.UP, "Drifter Nia")
 	await _close_dialogue(dialogue_panel, player)
 	overworld.trainer_battle_triggered.connect(_on_trainer_battle_triggered)
@@ -306,12 +318,14 @@ func _validate_route_2_scene_content() -> void:
 	await _validate_trainer_interactable(player, tile_map, Vector2i(12, 8), Vector2i.LEFT, 6)
 	var defeated_trainers: Array[String] = ["trainer_pike"]
 	overworld.set_defeated_interactables(defeated_trainers)
+	_validate_interactable_visual(interactables, "TrainerPike", Color(0.45, 0.45, 0.5, 1.0))
 	await _validate_defeated_trainer_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(12, 8), Vector2i.LEFT, "type matchups")
 	await _close_dialogue(dialogue_panel, player)
 	await _validate_pickup_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(13, 9), Vector2i.DOWN, "route2_capsule", "capture_capsule", 1, "Found a Capture Capsule")
 	await _close_dialogue(dialogue_panel, player)
 	var collected_pickups: Array[String] = ["route2_capsule"]
 	overworld.set_collected_interactables(collected_pickups)
+	_validate_interactable_visual(interactables, "Route2Capsule", Color(0.45, 0.45, 0.5, 1.0))
 	await _validate_collected_pickup_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(13, 9), Vector2i.DOWN, "empty")
 	overworld.queue_free()
 
@@ -641,6 +655,26 @@ func _instantiate_overworld(map_override: Resource = null) -> Node:
 	await process_frame
 	await process_frame
 	return overworld
+
+
+func _validate_interactable_visual(interactables: Node2D, interactable_name: String, expected_color: Color) -> void:
+	var interactable := interactables.get_node_or_null(interactable_name)
+
+	if interactable == null:
+		push_error("Could not find interactable visual for %s." % interactable_name)
+		quit(1)
+		return
+
+	var body := interactable.get_node_or_null("Body") as ColorRect
+
+	if body == null:
+		push_error("%s is missing its placeholder body visual." % interactable_name)
+		quit(1)
+		return
+
+	if not body.color.is_equal_approx(expected_color):
+		push_error("%s has the wrong placeholder color: %s." % [interactable_name, str(body.color)])
+		quit(1)
 
 
 func _validate_blocked_dialogue_interactable(
