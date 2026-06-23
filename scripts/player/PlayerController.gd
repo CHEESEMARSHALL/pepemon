@@ -189,12 +189,23 @@ func _is_blocked_tile(cell: Vector2i) -> bool:
 	if _tile_map == null:
 		return false
 
-	var tile_data := _tile_map.get_cell_tile_data(ground_layer, cell)
+	var found_tile := false
 
-	if tile_data == null:
+	for layer in range(_tile_map.get_layers_count()):
+		var tile_data := _tile_map.get_cell_tile_data(layer, cell)
+
+		if tile_data == null:
+			continue
+
+		found_tile = true
+
+		if bool(tile_data.get_custom_data(blocked_custom_data_key)):
+			return true
+
+	if not found_tile:
 		return block_empty_tiles
 
-	return bool(tile_data.get_custom_data(blocked_custom_data_key))
+	return false
 
 
 func _snap_to_grid() -> void:

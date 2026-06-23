@@ -12,6 +12,8 @@ signal route_transition_requested(target_map: Resource, target_start_cell: Vecto
 
 const CELL_SIZE := Vector2i(32, 32)
 const SOURCE_ID := 0
+const GROUND_LAYER := 0
+const OVERLAY_LAYER := 1
 const ROUTE_TILE_SHEET_PATH := "res://assets/tiles/route1/route1_tiles.png"
 const DIRT_TILE := Vector2i(0, 0)
 const GRASS_TILE := Vector2i(1, 0)
@@ -83,6 +85,7 @@ func _setup_map() -> void:
 	if _ground_tile_map.tile_set == null:
 		_ground_tile_map.tile_set = _create_route_tile_set()
 
+	_ensure_tile_map_layers()
 	_ground_tile_map.clear()
 
 	if map_data == null:
@@ -92,10 +95,22 @@ func _setup_map() -> void:
 	if _hint_label != null:
 		_hint_label.text = map_data.map_name
 
+	var uses_overlay_rows := false
+
+	if map_data.has_method("has_overlay_rows"):
+		uses_overlay_rows = bool(map_data.has_overlay_rows())
+
 	for y in range(map_data.get_height()):
 		for x in range(map_data.get_width()):
 			var cell := Vector2i(x, y)
-			_ground_tile_map.set_cell(0, cell, SOURCE_ID, _get_tile_atlas_coords(map_data.get_tile_code(cell)))
+			var ground_tile := _get_ground_tile_atlas_coords(map_data.get_tile_code(cell)) if uses_overlay_rows else _get_tile_atlas_coords(map_data.get_tile_code(cell))
+			_ground_tile_map.set_cell(GROUND_LAYER, cell, SOURCE_ID, ground_tile)
+
+			if uses_overlay_rows and map_data.has_method("get_overlay_tile_code"):
+				var overlay_code := str(map_data.get_overlay_tile_code(cell))
+
+				if not overlay_code.is_empty():
+					_ground_tile_map.set_cell(OVERLAY_LAYER, cell, SOURCE_ID, _get_tile_atlas_coords(overlay_code))
 
 	var start_cell: Vector2i = player_start_cell_override if player_start_cell_override != Vector2i(-999, -999) else map_data.player_start_cell
 	_player.global_position = _ground_tile_map.to_global(_ground_tile_map.map_to_local(start_cell))
@@ -116,6 +131,26 @@ func _get_tile_atlas_coords(tile_code: String) -> Vector2i:
 			return HOUSE_TILE
 		_:
 			return DIRT_TILE
+
+
+func _get_ground_tile_atlas_coords(tile_code: String) -> Vector2i:
+	match tile_code:
+		"#":
+			return WALL_TILE
+		"G":
+			return GRASS_TILE
+		_:
+			return DIRT_TILE
+
+
+func _ensure_tile_map_layers() -> void:
+	while _ground_tile_map.get_layers_count() <= OVERLAY_LAYER:
+		_ground_tile_map.add_layer(_ground_tile_map.get_layers_count())
+
+	_ground_tile_map.set_layer_name(GROUND_LAYER, "Ground")
+	_ground_tile_map.set_layer_name(OVERLAY_LAYER, "Objects")
+	_ground_tile_map.set_layer_z_index(GROUND_LAYER, 0)
+	_ground_tile_map.set_layer_z_index(OVERLAY_LAYER, 1)
 
 
 func _create_route_tile_set() -> TileSet:
@@ -196,7 +231,7 @@ func _setup_interactables() -> void:
 		_interactables_by_cell[child.grid_cell] = child
 
 		if child.blocks_movement:
-			_ground_tile_map.set_cell(0, child.grid_cell, SOURCE_ID, NPC_TILE)
+			_ground_tile_map.set_cell(OVERLAY_LAYER, child.grid_cell, SOURCE_ID, NPC_TILE)
 
 
 func _spawn_interactables_from_map_data() -> void:
@@ -244,7 +279,7 @@ func _on_player_interaction_requested(cell: Vector2i) -> void:
 
 		return
 
-	var tile_data := _ground_tile_map.get_cell_tile_data(0, cell)
+	var tile_data := _get_cell_tile_data_for_interaction(cell)
 
 	if tile_data == null:
 		return
@@ -335,12 +370,10 @@ func _get_sighting_trainer(player_cell: Vector2i) -> Node:
 
 
 func _is_sight_blocked(cell: Vector2i) -> bool:
-	var tile_data := _ground_tile_map.get_cell_tile_data(0, cell)
-
-	if tile_data == null:
+	if not _has_any_tile_data(cell):
 		return true
 
-	if bool(tile_data.get_custom_data(BLOCKED_DATA_KEY)):
+	if _is_blocked_cell(cell):
 		return true
 
 	return _interactables_by_cell.has(cell)
@@ -502,7 +535,7 @@ func _get_interaction_prompt_text() -> String:
 	if map_data != null and map_data.has_method("get_sign_message") and not map_data.get_sign_message(target_cell).is_empty():
 		return "Read"
 
-	var tile_data := _ground_tile_map.get_cell_tile_data(0, target_cell) if _ground_tile_map != null else null
+	var tile_data := _get_cell_tile_data_for_interaction(target_cell) if _ground_tile_map != null else null
 
 	if tile_data != null and not str(tile_data.get_custom_data(INTERACTION_TEXT_DATA_KEY)).is_empty():
 		return "Read"
@@ -532,14 +565,54 @@ func _get_current_terrain_name(cell: Vector2i) -> String:
 	if _ground_tile_map == null:
 		return "Unknown"
 
-	var tile_data := _ground_tile_map.get_cell_tile_data(0, cell)
+	var ground_tile_data := _ground_tile_map.get_cell_tile_data(GROUND_LAYER, cell)
 
-	if tile_data == null:
+	if ground_tile_data == null:
 		return "Empty"
 
-	var terrain = tile_data.get_custom_data(TERRAIN_DATA_KEY)
+	var terrain = ground_tile_data.get_custom_data(TERRAIN_DATA_KEY)
 
 	if terrain == null or str(terrain).is_empty():
 		return "Unknown"
 
-	return str(terrain)
+	var overlay_tile_data := _ground_tile_map.get_cell_tile_data(OVERLAY_LAYER, cell)
+
+	if overlay_tile_data == null:
+		return str(terrain)
+
+	var overlay_terrain = overlay_tile_data.get_custom_data(TERRAIN_DATA_KEY)
+
+	if overlay_terrain == null or str(overlay_terrain).is_empty():
+		return str(terrain)
+
+	return "%s + %s" % [str(terrain), str(overlay_terrain)]
+
+
+func _get_cell_tile_data_for_interaction(cell: Vector2i) -> TileData:
+	if _ground_tile_map == null:
+		return null
+
+	for layer in range(_ground_tile_map.get_layers_count() - 1, -1, -1):
+		var tile_data := _ground_tile_map.get_cell_tile_data(layer, cell)
+
+		if tile_data != null:
+			return tile_data
+
+	return null
+
+
+func _has_any_tile_data(cell: Vector2i) -> bool:
+	return _get_cell_tile_data_for_interaction(cell) != null
+
+
+func _is_blocked_cell(cell: Vector2i) -> bool:
+	if _ground_tile_map == null:
+		return false
+
+	for layer in range(_ground_tile_map.get_layers_count()):
+		var tile_data := _ground_tile_map.get_cell_tile_data(layer, cell)
+
+		if tile_data != null and bool(tile_data.get_custom_data(BLOCKED_DATA_KEY)):
+			return true
+
+	return false

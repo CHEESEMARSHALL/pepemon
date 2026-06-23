@@ -48,12 +48,12 @@ func _validate_map_data() -> void:
 		quit(1)
 		return
 
-	if route_data.get_tile_code(Vector2i(0, 0)) != "T":
+	if route_data.get_overlay_tile_code(Vector2i(0, 0)) != "T":
 		push_error("Route1.tres should use tree tiles for the first-area border.")
 		quit(1)
 		return
 
-	if route_data.get_tile_code(Vector2i(2, 1)) != "H":
+	if route_data.get_overlay_tile_code(Vector2i(2, 1)) != "H":
 		push_error("Route1.tres should include a small house block for first-area worldbuilding.")
 		quit(1)
 		return
@@ -115,8 +115,14 @@ func _validate_map_data() -> void:
 
 	for sign_entry in route_data.sign_messages:
 		var sign_cell: Vector2i = sign_entry.get("cell", Vector2i(-999, -999))
+		var sign_tile_code := ""
 
-		if route_data.get_tile_code(sign_cell) != "S":
+		if route_data.has_method("get_overlay_tile_code"):
+			sign_tile_code = str(route_data.get_overlay_tile_code(sign_cell))
+		else:
+			sign_tile_code = str(route_data.get_tile_code(sign_cell))
+
+		if sign_tile_code != "S":
 			push_error("Sign message at %s does not match an authored sign tile." % str(sign_cell))
 			quit(1)
 			return
@@ -226,8 +232,12 @@ func _validate_scene_content() -> void:
 		return
 
 	_validate_debug_hud(debug_label, "Pepemon Route 1", Vector2i(8, 8), "Dirt", 0)
-	_validate_tile_terrain(tile_map, Vector2i(0, 0), "Tree", true)
-	_validate_tile_terrain(tile_map, Vector2i(2, 1), "House", true)
+	_validate_tile_terrain(tile_map, 0, Vector2i(0, 0), "Dirt", false)
+	_validate_tile_terrain(tile_map, 1, Vector2i(0, 0), "Tree", true)
+	_validate_tile_terrain(tile_map, 0, Vector2i(2, 1), "Dirt", false)
+	_validate_tile_terrain(tile_map, 1, Vector2i(2, 1), "House", true)
+	_validate_tile_terrain(tile_map, 0, Vector2i(12, 10), "Grass", false)
+	_validate_tile_terrain(tile_map, 1, Vector2i(12, 10), "Sign", true)
 	var follow_camera := player.get_node_or_null("FollowCamera") as Camera2D
 
 	if follow_camera == null or not follow_camera.enabled:
@@ -794,11 +804,11 @@ func _validate_alert_marker(interactables: Node2D, interactable_name: String, ex
 		quit(1)
 
 
-func _validate_tile_terrain(tile_map: TileMap, cell: Vector2i, expected_terrain: String, expected_blocked: bool) -> void:
-	var tile_data := tile_map.get_cell_tile_data(0, cell)
+func _validate_tile_terrain(tile_map: TileMap, layer: int, cell: Vector2i, expected_terrain: String, expected_blocked: bool) -> void:
+	var tile_data := tile_map.get_cell_tile_data(layer, cell)
 
 	if tile_data == null:
-		push_error("Expected tile data at %s." % str(cell))
+		push_error("Expected tile data on layer %d at %s." % [layer, str(cell)])
 		quit(1)
 		return
 
@@ -813,6 +823,16 @@ func _validate_tile_terrain(tile_map: TileMap, cell: Vector2i, expected_terrain:
 	if blocked != expected_blocked:
 		push_error("Expected blocked=%s at %s, got %s." % [str(expected_blocked), str(cell), str(blocked)])
 		quit(1)
+
+
+func _is_tile_blocked_on_any_layer(tile_map: TileMap, cell: Vector2i) -> bool:
+	for layer in range(tile_map.get_layers_count()):
+		var tile_data := tile_map.get_cell_tile_data(layer, cell)
+
+		if tile_data != null and bool(tile_data.get_custom_data("blocked")):
+			return true
+
+	return false
 
 
 func _validate_debug_hud(debug_label: Label, expected_map_name: String, expected_cell: Vector2i, expected_terrain: String, expected_encounter_percent: int) -> void:
@@ -905,9 +925,8 @@ func _validate_blocked_dialogue_interactable(
 	expected_text: String
 ) -> void:
 	var target_cell := start_cell + direction
-	var target_tile_data := tile_map.get_cell_tile_data(0, target_cell)
 
-	if target_tile_data == null or not bool(target_tile_data.get_custom_data("blocked")):
+	if not _is_tile_blocked_on_any_layer(tile_map, target_cell):
 		push_error("%s is not authored as a blocked tile at %s." % [expected_text, str(target_cell)])
 		quit(1)
 		return
