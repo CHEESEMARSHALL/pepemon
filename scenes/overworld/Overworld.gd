@@ -10,7 +10,7 @@ signal route_transition_requested(target_map: Resource, target_start_cell: Vecto
 @export var route_tile_sheet: Texture2D
 @export var player_start_cell_override := Vector2i(-999, -999)
 
-const CELL_SIZE := Vector2i(16, 16)
+const CELL_SIZE := Vector2i(32, 32)
 const SOURCE_ID := 0
 const ROUTE_TILE_SHEET_PATH := "res://assets/tiles/route1/route1_tiles.png"
 const DIRT_TILE := Vector2i(0, 0)

@@ -1,11 +1,11 @@
 Route 1 Tile Sheet
 ==================
 
-Drop a 16px tile sheet at:
+Drop a 32px tile sheet at:
 
 `assets/tiles/route1/route1_tiles.png`
 
-The overworld loader expects a single horizontal row of 16x16 tiles in this order:
+The overworld loader expects a single horizontal row of 32x32 tiles, so the full image should be 224x32 pixels. Tiles are read in this order:
 
 1. Dirt / walkable ground
 2. Grass / wild encounter tile

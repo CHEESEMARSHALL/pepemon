@@ -130,22 +130,22 @@ func _update_facing_marker() -> void:
 	if _facing_marker == null:
 		return
 
-	var marker_size := Vector2(3, 4)
+	var marker_size := Vector2(5, 6)
 	var half_size := marker_size * 0.5
 	var center := Vector2.ZERO
 
 	if _facing_direction == Vector2i.RIGHT:
-		center = Vector2(5.5, 0)
+		center = Vector2(11.0, 0)
 	elif _facing_direction == Vector2i.UP:
-		center = Vector2(0, -6.5)
-		marker_size = Vector2(4, 3)
+		center = Vector2(0, -13.0)
+		marker_size = Vector2(6, 5)
 		half_size = marker_size * 0.5
 	elif _facing_direction == Vector2i.DOWN:
-		center = Vector2(0, 6.5)
-		marker_size = Vector2(4, 3)
+		center = Vector2(0, 13.0)
+		marker_size = Vector2(6, 5)
 		half_size = marker_size * 0.5
 	else:
-		center = Vector2(-5.5, 0)
+		center = Vector2(-11.0, 0)
 
 	_facing_marker.offset_left = center.x - half_size.x
 	_facing_marker.offset_top = center.y - half_size.y

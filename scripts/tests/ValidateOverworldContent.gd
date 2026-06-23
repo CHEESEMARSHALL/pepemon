@@ -854,7 +854,7 @@ func _validate_player_facing_marker(player: PlayerController) -> void:
 	player.set_facing_direction(Vector2i.RIGHT)
 	await process_frame
 
-	if not is_equal_approx(marker.offset_left, 4.0) or not is_equal_approx(marker.offset_right, 7.0):
+	if not is_equal_approx(marker.offset_left, 8.5) or not is_equal_approx(marker.offset_right, 13.5):
 		push_error("Facing marker did not move to the right edge.")
 		quit(1)
 		return
@@ -862,7 +862,7 @@ func _validate_player_facing_marker(player: PlayerController) -> void:
 	player.set_facing_direction(Vector2i.UP)
 	await process_frame
 
-	if not is_equal_approx(marker.offset_top, -8.0) or not is_equal_approx(marker.offset_bottom, -5.0):
+	if not is_equal_approx(marker.offset_top, -15.5) or not is_equal_approx(marker.offset_bottom, -10.5):
 		push_error("Facing marker did not move to the top edge.")
 		quit(1)
 		return
