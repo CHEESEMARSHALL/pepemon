@@ -7,6 +7,7 @@ class_name OverworldMapData
 @export var rows: Array[String] = []
 @export var overlay_rows: Array[String] = []
 @export var sign_messages: Array[Dictionary] = []
+@export var inspect_messages: Array[Dictionary] = []
 @export var interactables: Array[Dictionary] = []
 @export var transitions: Array[Dictionary] = []
 
@@ -63,6 +64,17 @@ func get_sign_message(cell: Vector2i) -> String:
 
 		if sign_entry.get("cell", Vector2i(-999, -999)) == cell:
 			return str(sign_entry.get("message", ""))
+
+	return ""
+
+
+func get_inspect_message(cell: Vector2i) -> String:
+	for inspect_entry in inspect_messages:
+		if not inspect_entry is Dictionary:
+			continue
+
+		if inspect_entry.get("cell", Vector2i(-999, -999)) == cell:
+			return str(inspect_entry.get("message", ""))
 
 	return ""
 

@@ -113,6 +113,11 @@ func _validate_map_data() -> void:
 		push_error("Route1.tres should include multiple authored signs.")
 		quit(1)
 
+	if route_data.get_inspect_message(Vector2i(2, 1)).is_empty():
+		push_error("Route1.tres should include inspect text for the route cottage.")
+		quit(1)
+		return
+
 	for sign_entry in route_data.sign_messages:
 		var sign_cell: Vector2i = sign_entry.get("cell", Vector2i(-999, -999))
 		var sign_tile_code := ""
@@ -301,6 +306,9 @@ func _validate_scene_content() -> void:
 	await _validate_blocked_dialogue_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(8, 8), Vector2i.UP, "Scout Mira")
 	await _close_dialogue(dialogue_panel, player)
 	await _validate_blocked_dialogue_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(6, 9), Vector2i.DOWN, "Keeper Sol")
+	await _close_dialogue(dialogue_panel, player)
+	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(2, 2), Vector2i.UP, "Check")
+	await _validate_inspectable_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(2, 2), Vector2i.UP, "route keeper")
 	await _close_dialogue(dialogue_panel, player)
 
 	overworld.trainer_battle_triggered.connect(_on_trainer_battle_triggered)
@@ -972,6 +980,26 @@ func _validate_blocked_dialogue_interactable(
 
 	if not dialogue_panel.visible or not dialogue_label.text.contains(expected_text):
 		push_error("%s did not show dialogue." % expected_text)
+		quit(1)
+
+
+func _validate_inspectable_dialogue(
+	player: PlayerController,
+	dialogue_panel: PanelContainer,
+	dialogue_label: Label,
+	tile_map: TileMap,
+	start_cell: Vector2i,
+	direction: Vector2i,
+	expected_text: String
+) -> void:
+	player.global_position = tile_map.to_global(tile_map.map_to_local(start_cell))
+	await process_frame
+	player.set("_facing_direction", direction)
+	player.interact()
+	await process_frame
+
+	if not dialogue_panel.visible or not dialogue_label.text.contains(expected_text):
+		push_error("Inspectable scenery did not show dialogue containing '%s'." % expected_text)
 		quit(1)
 
 

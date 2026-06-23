@@ -316,6 +316,9 @@ func _on_player_interaction_requested(cell: Vector2i) -> void:
 	if map_data != null and map_data.has_method("get_sign_message"):
 		message = map_data.get_sign_message(cell)
 
+	if message.is_empty() and map_data != null and map_data.has_method("get_inspect_message"):
+		message = map_data.get_inspect_message(cell)
+
 	if message.is_empty():
 		message = str(tile_data.get_custom_data(INTERACTION_TEXT_DATA_KEY))
 
@@ -561,6 +564,9 @@ func _get_interaction_prompt_text() -> String:
 
 	if map_data != null and map_data.has_method("get_sign_message") and not map_data.get_sign_message(target_cell).is_empty():
 		return "Read"
+
+	if map_data != null and map_data.has_method("get_inspect_message") and not map_data.get_inspect_message(target_cell).is_empty():
+		return "Check"
 
 	var tile_data := _get_cell_tile_data_for_interaction(target_cell) if _ground_tile_map != null else null
 
