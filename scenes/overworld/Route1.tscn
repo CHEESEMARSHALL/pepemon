@@ -1,0 +1,372 @@
+[gd_scene format=4 uid="uid://xttfieew56gu"]
+
+[ext_resource type="Script" uid="uid://2t3x40bh642o" path="res://scenes/overworld/RouteController.gd" id="1_l41of"]
+[ext_resource type="Resource" uid="uid://c06hb7gx14elp" path="res://data/overworld/Route1.tres" id="2_fu3b2"]
+[ext_resource type="Script" uid="uid://ds0gqb0kwwl03" path="res://scripts/overworld/OverworldContentMarker.gd" id="3_bblkx"]
+[ext_resource type="PackedScene" path="res://scenes/overworld/NpcInteractable.tscn" id="3_fce2e"]
+[ext_resource type="TileSet" uid="uid://b4w8gi7bxis31" path="res://assets/tiles/route1/RouteTiles.tres" id="4_l41of"]
+[ext_resource type="Script" uid="uid://corsa748qmsdg" path="res://scripts/player/PlayerController.gd" id="5_fu3b2"]
+[ext_resource type="Script" path="res://scripts/overworld/OverworldSpawnPoint.gd" id="6_spawn"]
+[ext_resource type="Script" path="res://scripts/overworld/OverworldEncounterZone.gd" id="7_zone"]
+[ext_resource type="Resource" path="res://data/monsters/WaterMonster.tres" id="7_010cm"]
+
+[node name="Route1" type="Node2D" unique_id=62359989]
+script = ExtResource("1_l41of")
+map_data = ExtResource("2_fu3b2")
+authored_map_data = ExtResource("2_fu3b2")
+interactable_scene = ExtResource("3_fce2e")
+
+[node name="MapLayers" type="Node2D" parent="." unique_id=1469141248]
+unique_name_in_owner = true
+
+[node name="Ground" type="TileMapLayer" parent="MapLayers" unique_id=1221543340]
+unique_name_in_owner = true
+use_parent_material = true
+tile_map_data = PackedByteArray("AAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAACAAAAAAAAAAAAAAADAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAFAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAHAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAJAAAAAAAAAAAAAAAKAAAAAAAAAAAAAAALAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAANAAAAAAAAAAAAAAAOAAAAAAAAAAAAAAAPAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAABAAEAAAAAAAAAAAACAAEAAAAAAAAAAAADAAEAAAAAAAAAAAAEAAEAAAAAAAAAAAAFAAEAAAAAAAAAAAAGAAEAAAAAAAAAAAAHAAEAAAAAAAAAAAAIAAEAAAAAAAAAAAAJAAEAAAAAAAAAAAAKAAEAAAAAAAAAAAALAAEAAAAAAAAAAAAMAAEAAAAAAAAAAAANAAEAAAAAAAAAAAAOAAEAAAAAAAAAAAAPAAEAAAAAAAAAAAAAAAIAAAAAAAAAAAANAAIAAAAAAAAAAAAOAAIAAAAAAAAAAAAPAAIAAAAAAAAAAAAAAAMAAAAAAAAAAAANAAMAAAAAAAAAAAAOAAMAAAAAAAAAAAAPAAMAAAAAAAAAAAAAAAQAAAAAAAAAAAANAAQAAAAAAAAAAAAOAAQAAAAAAAAAAAAPAAQAAAAAAAAAAAAAAAUAAAAAAAAAAAANAAUAAAAAAAAAAAAOAAUAAAAAAAAAAAAPAAUAAAAAAAAAAAAAAAYAAAAAAAAAAAANAAYAAAAAAAAAAAAOAAYAAAAAAAAAAAAPAAYAAAAAAAAAAAAAAAcAAAAAAAAAAAANAAcAAAAAAAAAAAAOAAcAAAAAAAAAAAAAAAgAAAAAAAAAAAANAAgAAAAAAAAAAAAOAAgAAAAAAAAAAAAAAAkAAAAAAAAAAAANAAkAAAAAAAAAAAAOAAkAAAAAAAAAAAAPAAkAAAAAAAAAAAAAAAoAAAAAAAAAAAANAAoAAAAAAAAAAAAOAAoAAAAAAAAAAAAPAAoAAAAAAAAAAAAAAAsAAAAAAAAAAAANAAsAAAAAAAAAAAAOAAsAAAAAAAAAAAAPAAsAAAAAAAAAAAAAAAwAAAAAAAAAAAANAAwAAAAAAAAAAAAOAAwAAAAAAAAAAAAPAAwAAAAAAAAAAAABAAIAAAAAAAAAAAABAAMAAAAAAAAAAAABAAQAAAAAAAAAAAABAAUAAAAAAAAAAAABAAYAAAAAAAAAAAABAAcAAAAAAAAAAAABAAgAAAAAAAAAAAABAAkAAAAAAAAAAAABAAoAAAAAAAAAAAABAAsAAAAAAAAAAAABAAwAAAAAAAAAAAACAAIAAAAAAAAAAAACAAMAAAAAAAAAAAACAAQAAAAAAAAAAAACAAUAAAAAAAAAAAACAAYAAAABAAAAAAACAAcAAAABAAAAAAACAAgAAAABAAAAAAACAAkAAAABAAAAAAACAAoAAAABAAAAAAACAAsAAAAAAAAAAAACAAwAAAAAAAAAAAADAAIAAAAAAAAAAAADAAMAAAAAAAAAAAADAAQAAAAAAAAAAAADAAUAAAAAAAAAAAADAAYAAAABAAAAAAADAAcAAAABAAAAAAADAAgAAAABAAAAAAADAAkAAAABAAAAAAADAAoAAAABAAAAAAADAAsAAAAAAAAAAAADAAwAAAAAAAAAAAAEAAIAAAAAAAAAAAAEAAMAAAAAAAAAAAAEAAQAAAAAAAAAAAAEAAUAAAAAAAAAAAAEAAYAAAABAAAAAAAEAAcAAAABAAAAAAAEAAgAAAABAAAAAAAEAAkAAAABAAAAAAAEAAoAAAABAAAAAAAEAAsAAAAAAAAAAAAEAAwAAAAAAAAAAAAFAAIAAAABAAAAAAAFAAMAAAABAAAAAAAFAAQAAAAAAAAAAAAFAAUAAAAAAAAAAAAFAAYAAAABAAAAAAAFAAcAAAABAAAAAAAFAAgAAAABAAAAAAAFAAkAAAABAAAAAAAFAAoAAAABAAAAAAAFAAsAAAAAAAAAAAAFAAwAAAAAAAAAAAAGAAIAAAABAAAAAAAGAAMAAAABAAAAAAAGAAQAAAAAAAAAAAAGAAUAAAAAAAAAAAAGAAYAAAABAAAAAAAGAAcAAAABAAAAAAAGAAgAAAABAAAAAAAGAAkAAAABAAAAAAAGAAoAAAABAAAAAAAGAAsAAAAAAAAAAAAGAAwAAAAAAAAAAAAHAAIAAAAAAAAAAAAHAAMAAAAAAAAAAAAHAAQAAAAAAAAAAAAHAAUAAAAAAAAAAAAHAAYAAAABAAAAAAAHAAcAAAABAAAAAAAHAAgAAAABAAAAAAAHAAkAAAABAAAAAAAHAAoAAAABAAAAAAAHAAsAAAAAAAAAAAAHAAwAAAAAAAAAAAAIAAIAAAAAAAAAAAAIAAMAAAAAAAAAAAAIAAQAAAAAAAAAAAAIAAUAAAAAAAAAAAAIAAYAAAAAAAAAAAAIAAcAAAAAAAAAAAAIAAgAAAAAAAAAAAAIAAkAAAAAAAAAAAAIAAoAAAAAAAAAAAAIAAsAAAAAAAAAAAAIAAwAAAAAAAAAAAAJAAIAAAAAAAAAAAAJAAMAAAAAAAAAAAAJAAQAAAAAAAAAAAAJAAUAAAAAAAAAAAAJAAYAAAAAAAAAAAAJAAcAAAAAAAAAAAAJAAgAAAABAAAAAAAJAAkAAAAAAAAAAAAJAAoAAAAAAAAAAAAJAAsAAAAAAAAAAAAJAAwAAAAAAAAAAAAKAAIAAAAAAAAAAAAKAAQAAAAAAAAAAAAKAAUAAAAAAAAAAAAKAAYAAAABAAAAAAAKAAcAAAABAAAAAAAKAAgAAAABAAAAAAAKAAkAAAABAAAAAAAKAAoAAAABAAAAAAAKAAsAAAAAAAAAAAAKAAwAAAAAAAAAAAALAAIAAAAAAAAAAAALAAMAAAAAAAAAAAALAAQAAAAAAAAAAAALAAUAAAAAAAAAAAALAAYAAAABAAAAAAALAAcAAAABAAAAAAALAAgAAAABAAAAAAALAAkAAAABAAAAAAALAAoAAAABAAAAAAALAAsAAAAAAAAAAAALAAwAAAAAAAAAAAAMAAIAAAAAAAAAAAAMAAMAAAAAAAAAAAAMAAQAAAAAAAAAAAAMAAUAAAAAAAAAAAAMAAYAAAABAAAAAAAMAAcAAAABAAAAAAAMAAgAAAABAAAAAAAMAAkAAAABAAAAAAAMAAoAAAABAAAAAAAMAAsAAAAAAAAAAAAMAAwAAAAAAAAAAAAPAAgAAAAAAAAAAAAPAAcAAAAAAAAAAAAKAAMAAAAAAAAAAAA=")
+tile_set = ExtResource("4_l41of")
+
+[node name="Objects" type="TileMapLayer" parent="MapLayers" unique_id=2037326686]
+unique_name_in_owner = true
+z_index = 1
+use_parent_material = true
+tile_map_data = PackedByteArray("AAAAAAAAAAAFAAAAAAABAAAAAAAFAAAAAAACAAAAAAAFAAAAAAADAAAAAAAFAAAAAAAEAAAAAAAFAAAAAAAFAAAAAAAFAAAAAAAGAAAAAAAFAAAAAAAHAAAAAAAFAAAAAAAIAAAAAAAFAAAAAAAJAAAAAAAFAAAAAAAKAAAAAAAFAAAAAAALAAAAAAAFAAAAAAAMAAAAAAAFAAAAAAANAAAAAAAFAAAAAAAOAAAAAAAFAAAAAAAPAAAAAAAFAAAAAAAAAAEAAAAFAAAAAAAKAAEAAAAFAAAAAAALAAEAAAAFAAAAAAAPAAEAAAAFAAAAAAAAAAIAAAAFAAAAAAANAAIAAAAFAAAAAAAPAAIAAAAFAAAAAAAAAAMAAAAFAAAAAAAPAAMAAAAFAAAAAAAAAAQAAAAFAAAAAAAPAAQAAAAFAAAAAAAAAAUAAAAFAAAAAAAPAAUAAAAFAAAAAAAAAAYAAAAFAAAAAAAFAAYAAAADAAAAAAAAAAcAAAAFAAAAAAAAAAgAAAAFAAAAAAAPAAgAAAAFAAAAAAAAAAkAAAAFAAAAAAAPAAkAAAAFAAAAAAAAAAoAAAAFAAAAAAAMAAoAAAADAAAAAAAPAAoAAAAFAAAAAAAAAAsAAAAFAAAAAAAFAAsAAAAFAAAAAAAGAAsAAAAFAAAAAAAHAAsAAAAFAAAAAAAIAAsAAAAFAAAAAAAJAAsAAAAFAAAAAAAKAAsAAAAFAAAAAAALAAsAAAAFAAAAAAAMAAsAAAAFAAAAAAAPAAsAAAAFAAAAAAAAAAwAAAAFAAAAAAABAAwAAAAFAAAAAAACAAwAAAAFAAAAAAADAAwAAAAFAAAAAAAEAAwAAAAFAAAAAAAFAAwAAAAFAAAAAAAGAAwAAAAFAAAAAAAHAAwAAAAFAAAAAAAIAAwAAAAFAAAAAAAJAAwAAAAFAAAAAAAKAAwAAAAFAAAAAAALAAwAAAAFAAAAAAAMAAwAAAAFAAAAAAANAAwAAAAFAAAAAAAOAAwAAAAFAAAAAAAPAAwAAAAFAAAAAAACAAEAAAAHAAAAAAADAAEAAAAIAAAAAAAEAAEAAAAJAAAAAAACAAIAAAAKAAAAAAADAAIAAAALAAAAAAAEAAIAAAAMAAAAAAAHAAgAAAADAAAAAAAEAAsAAAAFAAAAAAADAAsAAAAFAAAAAAABAAUAAAAFAAAAAAABAAYAAAAFAAAAAAABAAcAAAAFAAAAAAABAAgAAAAFAAAAAAABAAkAAAAFAAAAAAABAAoAAAAFAAAAAAABAAsAAAAFAAAAAAACAAsAAAAFAAAAAAANAAgAAAAFAAAAAAANAAkAAAAFAAAAAAANAAoAAAAFAAAAAAANAAsAAAAFAAAAAAAOAAsAAAAFAAAAAAAOAAoAAAAFAAAAAAAOAAkAAAAFAAAAAAAOAAgAAAAFAAAAAAANAAYAAAAFAAAAAAANAAcAAAAFAAAAAAAOAAcAAAAFAAAAAAAPAAcAAAAFAAAAAAANAAUAAAAFAAAAAAAMAAUAAAAFAAAAAAALAAUAAAAFAAAAAAAKAAUAAAAFAAAAAAACAAUAAAAFAAAAAAADAAUAAAAFAAAAAAAEAAUAAAAFAAAAAAAFAAUAAAAFAAAAAAAGAAUAAAAFAAAAAAAHAAUAAAAFAAAAAAABAAEAAAAFAAAAAAAFAAEAAAAFAAAAAAAGAAEAAAAFAAAAAAABAAIAAAABAAAAAAABAAMAAAABAAAAAAAHAAEAAAABAAAAAAAIAAEAAAABAAAAAAAJAAEAAAABAAAAAAA=")
+tile_set = ExtResource("4_l41of")
+
+[node name="Player" type="CharacterBody2D" parent="." unique_id=1061627418]
+unique_name_in_owner = true
+z_index = 10
+position = Vector2(128, 128)
+script = ExtResource("5_fu3b2")
+tile_map_path = NodePath("../MapLayers/Ground")
+object_tile_layer_paths = Array[NodePath]([NodePath("../MapLayers/Objects")])
+
+[node name="PlaceholderSprite" type="ColorRect" parent="Player" unique_id=1763163821]
+offset_left = -10.0
+offset_top = -14.0
+offset_right = 10.0
+offset_bottom = 14.0
+color = Color(0.95, 0.18, 0.18, 1)
+
+[node name="FacingMarker" type="ColorRect" parent="Player" unique_id=1972757611]
+offset_left = -13.0
+offset_top = -3.0
+offset_right = -8.0
+offset_bottom = 3.0
+color = Color(0.08, 0.08, 0.1, 1)
+
+[node name="FollowCamera" type="Camera2D" parent="Player" unique_id=734261678]
+zoom = Vector2(2, 2)
+position_smoothing_enabled = true
+position_smoothing_speed = 8.0
+
+[node name="HintLabel" type="Label" parent="." unique_id=1500543987]
+unique_name_in_owner = true
+offset_left = 187.0
+offset_top = 35.0
+offset_right = 747.0
+offset_bottom = 83.0
+text = "Pepemon Route 1"
+
+[node name="Interactables" type="Node2D" parent="." unique_id=1637555731]
+unique_name_in_owner = true
+
+[node name="ScoutMira" parent="Interactables" unique_id=667336394 instance=ExtResource("3_fce2e")]
+position = Vector2(272, 240)
+grid_cell = Vector2i(8, 7)
+interactable_id = "scout_mira"
+dialogue_text = "Scout Mira: Monsters get faster as they level up."
+challenge_dialogue_text = "Scout Mira: Monsters get faster as they level up."
+
+[node name="KeeperSol" parent="Interactables" unique_id=1499599147 instance=ExtResource("3_fce2e")]
+position = Vector2(208, 336)
+grid_cell = Vector2i(6, 10)
+interactable_id = "keeper_sol"
+dialogue_text = "Keeper Sol: Every route has its own encounter table."
+challenge_dialogue_text = "Keeper Sol: Every route has its own encounter table."
+
+[node name="TrainerRook" parent="Interactables" unique_id=970489639 instance=ExtResource("3_fce2e")]
+position = Vector2(336, 208)
+grid_cell = Vector2i(10, 6)
+interactable_id = "trainer_rook"
+dialogue_text = "Rook: Let's test your team."
+defeated_dialogue_text = "Rook: Good match. Your timing is sharp."
+interaction_action = 1
+battle_monster_data = ExtResource("7_010cm")
+battle_monster_level = 4
+sight_direction = Vector2i(0, 1)
+sight_range = 3
+challenge_dialogue_text = "Rook: I saw you step into my training lane!"
+
+[node name="TrainerVale" parent="Interactables" unique_id=877815708 instance=ExtResource("3_fce2e")]
+position = Vector2(368, 304)
+grid_cell = Vector2i(11, 9)
+interactable_id = "trainer_vale"
+dialogue_text = "Vale: My water partner is ready."
+defeated_dialogue_text = "Vale: Next time, I'll bring a faster partner."
+interaction_action = 1
+battle_monster_data = ExtResource("7_010cm")
+sight_direction = Vector2i(0, 1)
+sight_range = 1
+challenge_dialogue_text = "Vale: Hold it. Battle me before you pass."
+
+[node name="Route1Potion" parent="Interactables" unique_id=1541769181 instance=ExtResource("3_fce2e")]
+position = Vector2(176, 80)
+grid_cell = Vector2i(5, 2)
+interactable_id = "route1_potion"
+dialogue_text = "Found a Potion."
+collected_dialogue_text = "The supply spot is empty."
+interaction_action = 2
+challenge_dialogue_text = "Found a Potion."
+pickup_item_key = "potion"
+pickup_item_name = "Potion"
+
+[node name="Route1Capsules" parent="Interactables" unique_id=1717977516 instance=ExtResource("3_fce2e")]
+position = Vector2(400, 80)
+grid_cell = Vector2i(12, 2)
+interactable_id = "route1_capsules"
+dialogue_text = "Found 2 Capture Capsules."
+collected_dialogue_text = "The capsule case is empty."
+interaction_action = 2
+challenge_dialogue_text = "Found 2 Capture Capsules."
+pickup_item_key = "capture_capsule"
+pickup_item_name = "Capture Capsule"
+pickup_count = 2
+
+[node name="DialogueLayer" type="CanvasLayer" parent="." unique_id=837847824]
+
+[node name="DebugPanel" type="PanelContainer" parent="DialogueLayer" unique_id=1576400861]
+unique_name_in_owner = true
+offset_left = 384.0
+offset_top = 24.0
+offset_right = 584.0
+offset_bottom = 104.0
+
+[node name="DebugMargin" type="MarginContainer" parent="DialogueLayer/DebugPanel" unique_id=28432617]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="DebugLabel" type="Label" parent="DialogueLayer/DebugPanel/DebugMargin" unique_id=1901350770]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Map: --
+Cell: --
+Terrain: --"
+
+[node name="InteractionPrompt" type="PanelContainer" parent="DialogueLayer" unique_id=634909456]
+unique_name_in_owner = true
+visible = false
+offset_left = 24.0
+offset_top = 216.0
+offset_right = 136.0
+offset_bottom = 250.0
+
+[node name="InteractionPromptMargin" type="MarginContainer" parent="DialogueLayer/InteractionPrompt" unique_id=388102031]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 6
+
+[node name="InteractionPromptLabel" type="Label" parent="DialogueLayer/InteractionPrompt/InteractionPromptMargin" unique_id=1652494697]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Talk"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DialoguePanel" type="PanelContainer" parent="DialogueLayer" unique_id=2019181774]
+unique_name_in_owner = true
+visible = false
+offset_left = 24.0
+offset_top = 256.0
+offset_right = 520.0
+offset_bottom = 336.0
+
+[node name="DialogueMargin" type="MarginContainer" parent="DialogueLayer/DialoguePanel" unique_id=1725381800]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="DialogueLabel" type="Label" parent="DialogueLayer/DialoguePanel/DialogueMargin" unique_id=2025588790]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Dialogue"
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="SpawnPoints" type="Node2D" parent="."]
+unique_name_in_owner = true
+
+[node name="Default" type="Node2D" parent="SpawnPoints"]
+position = Vector2(272, 272)
+script = ExtResource("6_spawn")
+grid_cell = Vector2i(8, 8)
+
+[node name="Body" type="ColorRect" parent="SpawnPoints/Default"]
+offset_left = -8.0
+offset_top = -8.0
+offset_right = 8.0
+offset_bottom = 8.0
+color = Color(0.96, 0.32, 0.32, 0.7)
+
+[node name="Label" type="Label" parent="SpawnPoints/Default"]
+offset_left = -8.0
+offset_top = -10.0
+offset_right = 8.0
+offset_bottom = 10.0
+text = "P"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="EncounterZones" type="Node2D" parent="."]
+unique_name_in_owner = true
+
+[node name="EastGrass" type="Node2D" parent="EncounterZones"]
+position = Vector2(304, 240)
+script = ExtResource("7_zone")
+zone_id = "route1_east_grass"
+grid_cell = Vector2i(9, 7)
+size_in_cells = Vector2i(4, 4)
+
+[node name="Body" type="ColorRect" parent="EncounterZones/EastGrass"]
+offset_left = -16.0
+offset_top = -16.0
+offset_right = 112.0
+offset_bottom = 112.0
+color = Color(0.16, 0.82, 0.34, 0.28)
+
+[node name="Label" type="Label" parent="EncounterZones/EastGrass"]
+offset_left = -16.0
+offset_top = -16.0
+offset_right = 112.0
+offset_bottom = 112.0
+text = "Wild"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ContentMarkers" type="Node2D" parent="." unique_id=339990408]
+unique_name_in_owner = true
+
+[node name="Sign_7_8" type="Node2D" parent="ContentMarkers" unique_id=832134940]
+position = Vector2(240, 272)
+script = ExtResource("3_bblkx")
+grid_cell = Vector2i(7, 8)
+message = "Pepemon Route 1
+Tall grass hides wild monsters."
+
+[node name="Body" type="ColorRect" parent="ContentMarkers/Sign_7_8" unique_id=718703373]
+offset_left = -8.0
+offset_top = -8.0
+offset_right = 8.0
+offset_bottom = 8.0
+color = Color(0.95, 0.82, 0.22, 0.7)
+
+[node name="Label" type="Label" parent="ContentMarkers/Sign_7_8" unique_id=1298134306]
+offset_left = -8.0
+offset_top = -10.0
+offset_right = 8.0
+offset_bottom = 10.0
+text = "S"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Sign_5_6" type="Node2D" parent="ContentMarkers" unique_id=316057153]
+position = Vector2(176, 208)
+script = ExtResource("3_bblkx")
+grid_cell = Vector2i(5, 6)
+message = "Route Tip
+Use Potions before trainer battles."
+
+[node name="Body" type="ColorRect" parent="ContentMarkers/Sign_5_6" unique_id=1214406009]
+offset_left = -8.0
+offset_top = -8.0
+offset_right = 8.0
+offset_bottom = 8.0
+color = Color(0.95, 0.82, 0.22, 0.7)
+
+[node name="Label" type="Label" parent="ContentMarkers/Sign_5_6" unique_id=1030525930]
+offset_left = -8.0
+offset_top = -10.0
+offset_right = 8.0
+offset_bottom = 10.0
+text = "S"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Sign_12_10" type="Node2D" parent="ContentMarkers" unique_id=949002780]
+position = Vector2(400, 336)
+script = ExtResource("3_bblkx")
+grid_cell = Vector2i(12, 10)
+message = "Training Notice
+Water beats Fire, Fire beats Grass."
+
+[node name="Body" type="ColorRect" parent="ContentMarkers/Sign_12_10" unique_id=181351880]
+offset_left = -8.0
+offset_top = -8.0
+offset_right = 8.0
+offset_bottom = 8.0
+color = Color(0.95, 0.82, 0.22, 0.7)
+
+[node name="Label" type="Label" parent="ContentMarkers/Sign_12_10" unique_id=1452489393]
+offset_left = -8.0
+offset_top = -10.0
+offset_right = 8.0
+offset_bottom = 10.0
+text = "S"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Inspect_3_2" type="Node2D" parent="ContentMarkers" unique_id=1604704615]
+position = Vector2(112, 80)
+script = ExtResource("3_bblkx")
+marker_type = 1
+grid_cell = Vector2i(3, 2)
+message = "The route keeper's cottage is quiet.
+Someone has stacked fresh monster feed by the door."
+prompt = "Knock"
+
+[node name="Body" type="ColorRect" parent="ContentMarkers/Inspect_3_2" unique_id=2000130824]
+offset_left = -8.0
+offset_top = -8.0
+offset_right = 8.0
+offset_bottom = 8.0
+color = Color(0.42, 0.58, 0.95, 0.7)
+
+[node name="Label" type="Label" parent="ContentMarkers/Inspect_3_2" unique_id=48508296]
+offset_left = -8.0
+offset_top = -10.0
+offset_right = 8.0
+offset_bottom = 10.0
+text = "?"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RouteExit_14_6" type="Node2D" parent="ContentMarkers" unique_id=650546052]
+position = Vector2(464, 208)
+script = ExtResource("3_bblkx")
+marker_type = 2
+grid_cell = Vector2i(14, 6)
+target_map_path = "res://data/overworld/Route2.tres"
+target_scene_path = "res://scenes/overworld/Route2.tscn"
+target_start_cell = Vector2i(1, 6)
+
+[node name="Body" type="ColorRect" parent="ContentMarkers/RouteExit_14_6" unique_id=1186919543]
+offset_left = -8.0
+offset_top = -8.0
+offset_right = 8.0
+offset_bottom = 8.0
+color = Color(0.21960784, 0.85882354, 0.6784314, 0)
+
+[node name="Label" type="Label" parent="ContentMarkers/RouteExit_14_6" unique_id=1527036675]
+offset_left = -8.0
+offset_top = -10.0
+offset_right = 8.0
+offset_bottom = 10.0
+text = ">"
+horizontal_alignment = 1
+vertical_alignment = 1

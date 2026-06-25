@@ -24,6 +24,12 @@ const SIGN_TILE := Vector2i(3, 0)
 const NPC_TILE := Vector2i(4, 0)
 const TREE_TILE := Vector2i(5, 0)
 const HOUSE_TILE := Vector2i(6, 0)
+const COTTAGE_ROOF_LEFT_TILE := Vector2i(7, 0)
+const COTTAGE_ROOF_MIDDLE_TILE := Vector2i(8, 0)
+const COTTAGE_ROOF_RIGHT_TILE := Vector2i(9, 0)
+const COTTAGE_WALL_LEFT_TILE := Vector2i(10, 0)
+const COTTAGE_DOOR_TILE := Vector2i(11, 0)
+const COTTAGE_WALL_RIGHT_TILE := Vector2i(12, 0)
 const TERRAIN_DATA_KEY := "terrain"
 const BLOCKED_DATA_KEY := "blocked"
 const INTERACTION_TEXT_DATA_KEY := "interaction_text"
@@ -34,9 +40,13 @@ const TERRAIN_SIGN := "Sign"
 const TERRAIN_NPC := "NPC"
 const TERRAIN_TREE := "Tree"
 const TERRAIN_HOUSE := "House"
+const MARKER_SIGN := 0
+const MARKER_INSPECT := 1
+const MARKER_TRANSITION := 2
 
 @onready var _player := %Player as PlayerController
-@onready var _ground_tile_map := %GroundTileMap as TileMap
+@onready var _ground_tile_map = _get_tile_layer_node("GroundTileMap", "Ground")
+@onready var _overlay_tile_layer = _get_tile_layer_node("Objects", "")
 @onready var _hint_label := %HintLabel as Label
 @onready var _debug_label := %DebugLabel as Label
 @onready var _interaction_prompt := %InteractionPrompt as PanelContainer
@@ -44,8 +54,16 @@ const TERRAIN_HOUSE := "House"
 @onready var _dialogue_panel := %DialoguePanel as PanelContainer
 @onready var _dialogue_label := %DialogueLabel as Label
 @onready var _interactables := %Interactables as Node2D
+@onready var _content_markers := get_node_or_null("%ContentMarkers") as Node2D
+@onready var _spawn_points := get_node_or_null("%SpawnPoints") as Node2D
+@onready var _encounter_zones := get_node_or_null("%EncounterZones") as Node2D
 
 var _interactables_by_cell: Dictionary = {}
+var _sign_messages_by_cell: Dictionary = {}
+var _inspect_messages_by_cell: Dictionary = {}
+var _transitions_by_cell: Dictionary = {}
+var _spawn_points_by_id: Dictionary = {}
+var _encounter_zone_configs_by_cell: Dictionary = {}
 var _authored_overlay_atlas_by_cell: Dictionary = {}
 var _dynamic_overlay_cells: Dictionary = {}
 var _defeated_interactable_ids: Array[String] = []
@@ -55,7 +73,8 @@ var _active_sight_trainer_id := ""
 
 func _ready() -> void:
 	_setup_map()
-	_spawn_interactables_from_map_data()
+	_setup_scene_content_markers()
+	_spawn_interactables_from_map_data_if_needed()
 	_setup_interactables()
 	_player.interaction_requested.connect(_on_player_interaction_requested)
 	_player.step_finished.connect(_on_player_step_finished)
@@ -82,12 +101,19 @@ func get_player_cell() -> Vector2i:
 	if _ground_tile_map == null or _player == null:
 		return Vector2i.ZERO
 
-	return _ground_tile_map.local_to_map(_ground_tile_map.to_local(_player.global_position))
+	return _world_to_map(_player.global_position)
 
 
 func _setup_map() -> void:
-	if _ground_tile_map.tile_set == null:
-		_ground_tile_map.tile_set = _create_route_tile_set()
+	if _ground_tile_map == null:
+		push_error("Overworld requires a GroundTileMap TileMap or Ground TileMapLayer.")
+		return
+
+	if _get_tile_set(_ground_tile_map) == null:
+		_set_tile_set(_ground_tile_map, _create_route_tile_set())
+
+	if _overlay_tile_layer != null and _get_tile_set(_overlay_tile_layer) == null:
+		_set_tile_set(_overlay_tile_layer, _get_tile_set(_ground_tile_map))
 
 	_ensure_tile_map_layers()
 	_authored_overlay_atlas_by_cell.clear()
@@ -105,9 +131,23 @@ func _setup_map() -> void:
 	else:
 		_paint_tile_map_from_map_data()
 
-	var start_cell: Vector2i = player_start_cell_override if player_start_cell_override != Vector2i(-999, -999) else map_data.player_start_cell
-	_player.global_position = _ground_tile_map.to_global(_ground_tile_map.map_to_local(start_cell))
+	_setup_scene_spawn_points()
+	_setup_scene_encounter_zones()
+
+	var start_cell := _get_player_start_cell()
+	_player.global_position = _map_to_world(start_cell)
 	_player.encounter_table = map_data.encounter_table
+	_player.set_encounter_zone_configs(_encounter_zone_configs_by_cell)
+
+
+func _get_player_start_cell() -> Vector2i:
+	if player_start_cell_override != Vector2i(-999, -999):
+		return player_start_cell_override
+
+	if _spawn_points_by_id.has("default"):
+		return _spawn_points_by_id["default"]
+
+	return map_data.player_start_cell
 
 
 func _uses_authored_tile_map() -> bool:
@@ -121,7 +161,8 @@ func _uses_authored_tile_map() -> bool:
 
 
 func _paint_tile_map_from_map_data() -> void:
-	_ground_tile_map.clear()
+	_clear_tile_layer(_ground_tile_map, GROUND_LAYER)
+	_clear_tile_layer(_overlay_tile_layer if _overlay_tile_layer != null else _ground_tile_map, OVERLAY_LAYER)
 
 	var uses_overlay_rows := false
 
@@ -132,7 +173,7 @@ func _paint_tile_map_from_map_data() -> void:
 		for x in range(map_data.get_width()):
 			var cell := Vector2i(x, y)
 			var ground_tile := _get_ground_tile_atlas_coords(map_data.get_tile_code(cell)) if uses_overlay_rows else _get_tile_atlas_coords(map_data.get_tile_code(cell))
-			_ground_tile_map.set_cell(GROUND_LAYER, cell, SOURCE_ID, ground_tile)
+			_set_cell(_ground_tile_map, GROUND_LAYER, cell, ground_tile)
 
 			if uses_overlay_rows and map_data.has_method("get_overlay_tile_code"):
 				var overlay_code := str(map_data.get_overlay_tile_code(cell))
@@ -140,17 +181,18 @@ func _paint_tile_map_from_map_data() -> void:
 				if not overlay_code.is_empty():
 					var overlay_atlas_coords := _get_tile_atlas_coords(overlay_code)
 					_authored_overlay_atlas_by_cell[cell] = overlay_atlas_coords
-					_ground_tile_map.set_cell(OVERLAY_LAYER, cell, SOURCE_ID, overlay_atlas_coords)
+					_set_cell(_overlay_tile_layer if _overlay_tile_layer != null else _ground_tile_map, OVERLAY_LAYER, cell, overlay_atlas_coords)
 
 
 func _cache_authored_overlay_tiles() -> void:
-	for cell in _ground_tile_map.get_used_cells(OVERLAY_LAYER):
-		var source_id := _ground_tile_map.get_cell_source_id(OVERLAY_LAYER, cell)
+	var overlay_layer = _overlay_tile_layer if _overlay_tile_layer != null else _ground_tile_map
+	for cell in _get_used_cells(overlay_layer, OVERLAY_LAYER):
+		var source_id := _get_cell_source_id(overlay_layer, OVERLAY_LAYER, cell)
 
 		if source_id < 0:
 			continue
 
-		_authored_overlay_atlas_by_cell[cell] = _ground_tile_map.get_cell_atlas_coords(OVERLAY_LAYER, cell)
+		_authored_overlay_atlas_by_cell[cell] = _get_cell_atlas_coords(overlay_layer, OVERLAY_LAYER, cell)
 
 
 func _get_tile_atlas_coords(tile_code: String) -> Vector2i:
@@ -180,6 +222,9 @@ func _get_ground_tile_atlas_coords(tile_code: String) -> Vector2i:
 
 
 func _ensure_tile_map_layers() -> void:
+	if not _ground_tile_map is TileMap:
+		return
+
 	while _ground_tile_map.get_layers_count() <= OVERLAY_LAYER:
 		_ground_tile_map.add_layer(_ground_tile_map.get_layers_count())
 
@@ -213,6 +258,12 @@ func _create_route_tile_set() -> TileSet:
 	source.create_tile(NPC_TILE)
 	source.create_tile(TREE_TILE)
 	source.create_tile(HOUSE_TILE)
+	source.create_tile(COTTAGE_ROOF_LEFT_TILE)
+	source.create_tile(COTTAGE_ROOF_MIDDLE_TILE)
+	source.create_tile(COTTAGE_ROOF_RIGHT_TILE)
+	source.create_tile(COTTAGE_WALL_LEFT_TILE)
+	source.create_tile(COTTAGE_DOOR_TILE)
+	source.create_tile(COTTAGE_WALL_RIGHT_TILE)
 
 	tile_set.add_source(source, SOURCE_ID)
 	source.get_tile_data(DIRT_TILE, 0).set_custom_data(TERRAIN_DATA_KEY, TERRAIN_DIRT)
@@ -229,20 +280,30 @@ func _create_route_tile_set() -> TileSet:
 	source.get_tile_data(TREE_TILE, 0).set_custom_data(BLOCKED_DATA_KEY, true)
 	source.get_tile_data(HOUSE_TILE, 0).set_custom_data(TERRAIN_DATA_KEY, TERRAIN_HOUSE)
 	source.get_tile_data(HOUSE_TILE, 0).set_custom_data(BLOCKED_DATA_KEY, true)
+	for cottage_tile in [
+		COTTAGE_ROOF_LEFT_TILE,
+		COTTAGE_ROOF_MIDDLE_TILE,
+		COTTAGE_ROOF_RIGHT_TILE,
+		COTTAGE_WALL_LEFT_TILE,
+		COTTAGE_DOOR_TILE,
+		COTTAGE_WALL_RIGHT_TILE,
+	]:
+		source.get_tile_data(cottage_tile, 0).set_custom_data(TERRAIN_DATA_KEY, TERRAIN_HOUSE)
+		source.get_tile_data(cottage_tile, 0).set_custom_data(BLOCKED_DATA_KEY, true)
 	return tile_set
 
 
 func _get_route_tile_texture() -> Texture2D:
-	if route_tile_sheet != null and route_tile_sheet.get_width() >= CELL_SIZE.x * 7:
+	if route_tile_sheet != null and route_tile_sheet.get_width() >= CELL_SIZE.x * 13:
 		return route_tile_sheet
 
 	if ResourceLoader.exists(ROUTE_TILE_SHEET_PATH):
 		var loaded_texture := load(ROUTE_TILE_SHEET_PATH) as Texture2D
 
-		if loaded_texture != null and loaded_texture.get_width() >= CELL_SIZE.x * 7:
+		if loaded_texture != null and loaded_texture.get_width() >= CELL_SIZE.x * 13:
 			return loaded_texture
 
-	var image := Image.create(CELL_SIZE.x * 7, CELL_SIZE.y, false, Image.FORMAT_RGBA8)
+	var image := Image.create(CELL_SIZE.x * 13, CELL_SIZE.y, false, Image.FORMAT_RGBA8)
 	image.fill_rect(Rect2i(Vector2i.ZERO, CELL_SIZE), Color(0.45, 0.32, 0.18))
 	image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x, 0), CELL_SIZE), Color(0.18, 0.62, 0.22))
 	image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x * 2, 0), CELL_SIZE), Color(0.18, 0.18, 0.2))
@@ -250,6 +311,8 @@ func _get_route_tile_texture() -> Texture2D:
 	image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x * 4, 0), CELL_SIZE), Color(0.24, 0.36, 0.86))
 	image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x * 5, 0), CELL_SIZE), Color(0.08, 0.38, 0.14))
 	image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x * 6, 0), CELL_SIZE), Color(0.58, 0.2, 0.16))
+	for cottage_index in range(7, 13):
+		image.fill_rect(Rect2i(Vector2i(CELL_SIZE.x * cottage_index, 0), CELL_SIZE), Color(0.58, 0.2, 0.16))
 	return ImageTexture.create_from_image(image)
 
 
@@ -263,6 +326,9 @@ func _setup_interactables() -> void:
 		if not child.has_method("place_on_tile_map") or not child.has_method("get_interaction_text"):
 			continue
 
+		if child.has_method("sync_grid_cell_from_tile_map") and child.owner != null:
+			child.sync_grid_cell_from_tile_map(_ground_tile_map)
+
 		child.place_on_tile_map(_ground_tile_map)
 		_interactables_by_cell[child.grid_cell] = child
 
@@ -275,7 +341,7 @@ func _set_dynamic_overlay_tile(cell: Vector2i, atlas_coords: Vector2i) -> void:
 		return
 
 	_dynamic_overlay_cells[cell] = atlas_coords
-	_ground_tile_map.set_cell(OVERLAY_LAYER, cell, SOURCE_ID, atlas_coords)
+	_set_cell(_overlay_tile_layer if _overlay_tile_layer != null else _ground_tile_map, OVERLAY_LAYER, cell, atlas_coords)
 
 
 func _clear_dynamic_overlay_tile(cell: Vector2i) -> void:
@@ -285,14 +351,72 @@ func _clear_dynamic_overlay_tile(cell: Vector2i) -> void:
 	_dynamic_overlay_cells.erase(cell)
 
 	if _authored_overlay_atlas_by_cell.has(cell):
-		_ground_tile_map.set_cell(OVERLAY_LAYER, cell, SOURCE_ID, _authored_overlay_atlas_by_cell[cell])
+		_set_cell(_overlay_tile_layer if _overlay_tile_layer != null else _ground_tile_map, OVERLAY_LAYER, cell, _authored_overlay_atlas_by_cell[cell])
 		return
 
-	_ground_tile_map.erase_cell(OVERLAY_LAYER, cell)
+	_erase_cell(_overlay_tile_layer if _overlay_tile_layer != null else _ground_tile_map, OVERLAY_LAYER, cell)
 
 
-func _spawn_interactables_from_map_data() -> void:
+func _setup_scene_content_markers() -> void:
+	_sign_messages_by_cell.clear()
+	_inspect_messages_by_cell.clear()
+	_transitions_by_cell.clear()
+
+	if _content_markers == null:
+		return
+
+	for marker in _content_markers.get_children():
+		if not marker.has_method("sync_grid_cell_from_tile_map"):
+			continue
+
+		marker.sync_grid_cell_from_tile_map(_ground_tile_map)
+
+		match int(marker.marker_type):
+			MARKER_SIGN:
+				_sign_messages_by_cell[marker.grid_cell] = marker.to_sign_entry()
+			MARKER_INSPECT:
+				_inspect_messages_by_cell[marker.grid_cell] = marker.to_inspect_entry()
+			MARKER_TRANSITION:
+				_transitions_by_cell[marker.grid_cell] = marker.to_transition_entry()
+
+
+func _setup_scene_spawn_points() -> void:
+	_spawn_points_by_id.clear()
+
+	if _spawn_points == null:
+		return
+
+	for spawn_point in _spawn_points.get_children():
+		if not spawn_point.has_method("sync_grid_cell_from_tile_map"):
+			continue
+
+		spawn_point.sync_grid_cell_from_tile_map(_ground_tile_map)
+		_spawn_points_by_id[str(spawn_point.get("spawn_id"))] = spawn_point.get("grid_cell")
+
+
+func _setup_scene_encounter_zones() -> void:
+	_encounter_zone_configs_by_cell.clear()
+
+	if _encounter_zones == null:
+		return
+
+	for encounter_zone in _encounter_zones.get_children():
+		if not encounter_zone.has_method("sync_grid_cell_from_tile_map") or not encounter_zone.has_method("get_zone_cells"):
+			continue
+
+		encounter_zone.sync_grid_cell_from_tile_map(_ground_tile_map)
+		var encounter_config: Dictionary = encounter_zone.to_encounter_config(map_data.encounter_table)
+
+		for cell in encounter_zone.get_zone_cells():
+			if _has_any_tile_data(cell):
+				_encounter_zone_configs_by_cell[cell] = encounter_config
+
+
+func _spawn_interactables_from_map_data_if_needed() -> void:
 	if _interactables == null or map_data == null or interactable_scene == null:
+		return
+
+	if _has_authored_interactables():
 		return
 
 	for child in _interactables.get_children():
@@ -325,6 +449,17 @@ func _spawn_interactables_from_map_data() -> void:
 		interactable.refresh_visual()
 
 
+func _has_authored_interactables() -> bool:
+	if _interactables == null:
+		return false
+
+	for child in _interactables.get_children():
+		if child.has_method("place_on_tile_map") and child.has_method("get_interaction_text"):
+			return true
+
+	return false
+
+
 func _on_player_interaction_requested(cell: Vector2i) -> void:
 	_hide_interaction_prompt()
 
@@ -341,13 +476,10 @@ func _on_player_interaction_requested(cell: Vector2i) -> void:
 	if tile_data == null:
 		return
 
-	var message := ""
+	var message := _get_sign_message(cell)
 
-	if map_data != null and map_data.has_method("get_sign_message"):
-		message = map_data.get_sign_message(cell)
-
-	if message.is_empty() and map_data != null and map_data.has_method("get_inspect_message"):
-		message = map_data.get_inspect_message(cell)
+	if message.is_empty():
+		message = _get_inspect_message(cell)
 
 	if message.is_empty():
 		message = str(tile_data.get_custom_data(INTERACTION_TEXT_DATA_KEY))
@@ -379,10 +511,7 @@ func _on_player_step_finished(cell: Vector2i) -> void:
 
 
 func _check_route_transition(cell: Vector2i) -> bool:
-	if map_data == null or not map_data.has_method("get_transition_entry"):
-		return false
-
-	var transition: Dictionary = map_data.get_transition_entry(cell)
+	var transition: Dictionary = _get_transition_entry(cell)
 
 	if transition.is_empty():
 		return false
@@ -599,15 +728,14 @@ func _get_interaction_prompt_text() -> String:
 
 		return "Talk"
 
-	if map_data != null and map_data.has_method("get_sign_message") and not map_data.get_sign_message(target_cell).is_empty():
+	if not _get_sign_message(target_cell).is_empty():
 		return "Read"
 
-	if map_data != null and map_data.has_method("get_inspect_message") and not map_data.get_inspect_message(target_cell).is_empty():
-		if map_data.has_method("get_inspect_prompt"):
-			var inspect_prompt := str(map_data.get_inspect_prompt(target_cell))
+	if not _get_inspect_message(target_cell).is_empty():
+		var inspect_prompt := _get_inspect_prompt(target_cell)
 
-			if not inspect_prompt.is_empty():
-				return inspect_prompt
+		if not inspect_prompt.is_empty():
+			return inspect_prompt
 
 		return "Check"
 
@@ -617,6 +745,47 @@ func _get_interaction_prompt_text() -> String:
 		return "Read"
 
 	return ""
+
+
+func _get_sign_message(cell: Vector2i) -> String:
+	if _sign_messages_by_cell.has(cell):
+		return str(_sign_messages_by_cell[cell].get("message", ""))
+
+	if map_data != null and map_data.has_method("get_sign_message"):
+		return map_data.get_sign_message(cell)
+
+	return ""
+
+
+func _get_inspect_message(cell: Vector2i) -> String:
+	if _inspect_messages_by_cell.has(cell):
+		return str(_inspect_messages_by_cell[cell].get("message", ""))
+
+	if map_data != null and map_data.has_method("get_inspect_message"):
+		return map_data.get_inspect_message(cell)
+
+	return ""
+
+
+func _get_inspect_prompt(cell: Vector2i) -> String:
+	if _inspect_messages_by_cell.has(cell):
+		var prompt := str(_inspect_messages_by_cell[cell].get("prompt", "Check"))
+		return "Check" if prompt.is_empty() else prompt
+
+	if map_data != null and map_data.has_method("get_inspect_prompt"):
+		return map_data.get_inspect_prompt(cell)
+
+	return ""
+
+
+func _get_transition_entry(cell: Vector2i) -> Dictionary:
+	if _transitions_by_cell.has(cell):
+		return _transitions_by_cell[cell]
+
+	if map_data != null and map_data.has_method("get_transition_entry"):
+		return map_data.get_transition_entry(cell)
+
+	return {}
 
 
 func _update_debug_hud() -> void:
@@ -633,7 +802,7 @@ func _update_debug_hud() -> void:
 		map_name,
 		str(player_cell),
 		_get_current_terrain_name(player_cell),
-		roundi(_player.grass_encounter_chance * 100.0),
+		roundi(_player.get_encounter_chance_for_cell(player_cell) * 100.0),
 	]
 
 
@@ -641,7 +810,7 @@ func _get_current_terrain_name(cell: Vector2i) -> String:
 	if _ground_tile_map == null:
 		return "Unknown"
 
-	var ground_tile_data := _ground_tile_map.get_cell_tile_data(GROUND_LAYER, cell)
+	var ground_tile_data := _get_cell_tile_data(_ground_tile_map, GROUND_LAYER, cell)
 
 	if ground_tile_data == null:
 		return "Empty"
@@ -651,7 +820,7 @@ func _get_current_terrain_name(cell: Vector2i) -> String:
 	if terrain == null or str(terrain).is_empty():
 		return "Unknown"
 
-	var overlay_tile_data := _ground_tile_map.get_cell_tile_data(OVERLAY_LAYER, cell)
+	var overlay_tile_data := _get_cell_tile_data(_overlay_tile_layer if _overlay_tile_layer != null else _ground_tile_map, OVERLAY_LAYER, cell)
 
 	if overlay_tile_data == null:
 		return str(terrain)
@@ -668,8 +837,18 @@ func _get_cell_tile_data_for_interaction(cell: Vector2i) -> TileData:
 	if _ground_tile_map == null:
 		return null
 
-	for layer in range(_ground_tile_map.get_layers_count() - 1, -1, -1):
-		var tile_data := _ground_tile_map.get_cell_tile_data(layer, cell)
+	var overlay_tile_data := _get_cell_tile_data(_overlay_tile_layer if _overlay_tile_layer != null else _ground_tile_map, OVERLAY_LAYER, cell)
+
+	if overlay_tile_data != null:
+		return overlay_tile_data
+
+	var layer_count := _get_layers_count(_ground_tile_map)
+
+	for layer in range(layer_count - 1, -1, -1):
+		if _ground_tile_map == _overlay_tile_layer and layer == OVERLAY_LAYER:
+			continue
+
+		var tile_data := _get_cell_tile_data(_ground_tile_map, layer, cell)
 
 		if tile_data != null:
 			return tile_data
@@ -685,10 +864,154 @@ func _is_blocked_cell(cell: Vector2i) -> bool:
 	if _ground_tile_map == null:
 		return false
 
-	for layer in range(_ground_tile_map.get_layers_count()):
-		var tile_data := _ground_tile_map.get_cell_tile_data(layer, cell)
+	for tile_layer in _get_collision_tile_layers():
+		var tile_data := _get_cell_tile_data(tile_layer.get("node"), int(tile_layer.get("layer", 0)), cell)
 
 		if tile_data != null and bool(tile_data.get_custom_data(BLOCKED_DATA_KEY)):
 			return true
 
 	return false
+
+
+func _get_tile_layer_node(tile_map_name: String, tile_layer_name: String) -> Node:
+	var tile_map := get_node_or_null("%" + tile_map_name)
+
+	if tile_map != null:
+		return tile_map
+
+	if not tile_layer_name.is_empty():
+		var unique_tile_layer := get_node_or_null("%" + tile_layer_name)
+
+		if unique_tile_layer != null:
+			return unique_tile_layer
+
+		return find_child(tile_layer_name, true, false)
+
+	return null
+
+
+func _get_tile_set(tile_layer: Node) -> TileSet:
+	if tile_layer == null:
+		return null
+
+	return tile_layer.get("tile_set") as TileSet
+
+
+func _set_tile_set(tile_layer: Node, tile_set: TileSet) -> void:
+	if tile_layer != null:
+		tile_layer.set("tile_set", tile_set)
+
+
+func _world_to_map(world_position: Vector2) -> Vector2i:
+	if _ground_tile_map == null:
+		return Vector2i.ZERO
+
+	return _ground_tile_map.call("local_to_map", _ground_tile_map.to_local(world_position))
+
+
+func _map_to_world(cell: Vector2i) -> Vector2:
+	if _ground_tile_map == null:
+		return Vector2.ZERO
+
+	return _ground_tile_map.to_global(_ground_tile_map.call("map_to_local", cell))
+
+
+func _get_layers_count(tile_layer: Node) -> int:
+	if tile_layer == null:
+		return 0
+
+	if tile_layer is TileMap:
+		return tile_layer.get_layers_count()
+
+	return 1
+
+
+func _get_collision_tile_layers() -> Array[Dictionary]:
+	var layers: Array[Dictionary] = []
+
+	if _ground_tile_map == null:
+		return layers
+
+	if _ground_tile_map is TileMap:
+		for layer in range(_ground_tile_map.get_layers_count()):
+			layers.append({ "node": _ground_tile_map, "layer": layer })
+	else:
+		layers.append({ "node": _ground_tile_map, "layer": GROUND_LAYER })
+
+	if _overlay_tile_layer != null:
+		layers.append({ "node": _overlay_tile_layer, "layer": OVERLAY_LAYER })
+
+	return layers
+
+
+func _get_cell_tile_data(tile_layer: Node, layer: int, cell: Vector2i) -> TileData:
+	if tile_layer == null:
+		return null
+
+	if tile_layer is TileMap:
+		return tile_layer.get_cell_tile_data(layer, cell)
+
+	return tile_layer.call("get_cell_tile_data", cell)
+
+
+func _set_cell(tile_layer: Node, layer: int, cell: Vector2i, atlas_coords: Vector2i) -> void:
+	if tile_layer == null:
+		return
+
+	if tile_layer is TileMap:
+		tile_layer.set_cell(layer, cell, SOURCE_ID, atlas_coords)
+		return
+
+	tile_layer.call("set_cell", cell, SOURCE_ID, atlas_coords)
+
+
+func _erase_cell(tile_layer: Node, layer: int, cell: Vector2i) -> void:
+	if tile_layer == null:
+		return
+
+	if tile_layer is TileMap:
+		tile_layer.erase_cell(layer, cell)
+		return
+
+	tile_layer.call("erase_cell", cell)
+
+
+func _clear_tile_layer(tile_layer: Node, layer: int) -> void:
+	if tile_layer == null:
+		return
+
+	if tile_layer is TileMap:
+		tile_layer.clear_layer(layer)
+		return
+
+	tile_layer.call("clear")
+
+
+func _get_used_cells(tile_layer: Node, layer: int) -> Array[Vector2i]:
+	if tile_layer == null:
+		return []
+
+	if tile_layer is TileMap:
+		return tile_layer.get_used_cells(layer)
+
+	return tile_layer.call("get_used_cells")
+
+
+func _get_cell_source_id(tile_layer: Node, layer: int, cell: Vector2i) -> int:
+	if tile_layer == null:
+		return -1
+
+	if tile_layer is TileMap:
+		return tile_layer.get_cell_source_id(layer, cell)
+
+	return int(tile_layer.call("get_cell_source_id", cell))
+
+
+func _get_cell_atlas_coords(tile_layer: Node, layer: int, cell: Vector2i) -> Vector2i:
+	if tile_layer == null:
+		return Vector2i(-1, -1)
+
+	if tile_layer is TileMap:
+		return tile_layer.get_cell_atlas_coords(layer, cell)
+
+	return tile_layer.call("get_cell_atlas_coords", cell)

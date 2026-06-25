@@ -40,7 +40,7 @@ func _run() -> void:
 		1,
 		{"potion": 1, "capture_capsule": 4},
 		{"defeated_trainers": ["trainer_rook"], "collected_pickups": ["route1_potion"]},
-		{"map_path": "res://data/overworld/Route2.tres", "player_cell": Vector2i(7, 8)}
+		{"map_path": "res://data/overworld/Route2.tres", "scene_path": "res://scenes/overworld/Route2.tscn", "player_cell": Vector2i(7, 8)}
 	):
 		push_error("Could not prepare save data for GameManager load validation.")
 		quit(1)
@@ -86,6 +86,11 @@ func _run() -> void:
 
 	if loaded_map == null or loaded_map.map_name != "Pepemon Route 2":
 		push_error("GameManager did not load the saved overworld route.")
+		quit(1)
+		return
+
+	if overworld.name != "Route2":
+		push_error("GameManager did not load the saved Route2 scene.")
 		quit(1)
 		return
 

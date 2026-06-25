@@ -1,2 +1,23 @@
 .godot/
+.godot_ide/
+.script_splitter/
 .tools/
+
+*.tmp
+*.temp
+
+# Preserved backup of the accidentally attached AI assistant repository.
+.git_wrong_ai_assistant_*/
+
+# Local plugin/editor debris from the accidental repository attachment.
+addons/ai_assistant_plugin/
+docs/asset_library_description.txt
+docs/preview_*
+LICENSE
+README.md
+icon.png
+icon.png.import
+
+# Local scratch scripts.
+scenes/game/player.gd
+scenes/game/player.gd.uid

@@ -131,10 +131,14 @@ static func _serialize_route_state(route_state: Dictionary) -> Dictionary:
 static func _serialize_world_state(world_state: Dictionary) -> Dictionary:
 	var serialized := {}
 	var map_path := str(world_state.get("map_path", ""))
+	var scene_path := str(world_state.get("scene_path", ""))
 	var player_cell = world_state.get("player_cell", Vector2i.ZERO)
 
 	if not map_path.is_empty():
 		serialized["map_path"] = map_path
+
+	if not scene_path.is_empty():
+		serialized["scene_path"] = scene_path
 
 	if player_cell is Vector2i:
 		serialized["player_cell"] = {

@@ -34,7 +34,11 @@ func _run() -> void:
 		return
 
 	var player := overworld.find_child("Player", true, false) as PlayerController
-	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
+	var tile_map := overworld.get_node_or_null("%GroundTileMap")
+
+	if tile_map == null:
+		tile_map = overworld.get_node_or_null("%Ground")
+
 	var encounter_cell := Vector2i(9, 8)
 
 	if player == null or tile_map == null:
@@ -42,7 +46,7 @@ func _run() -> void:
 		quit(1)
 		return
 
-	player.global_position = tile_map.to_global(tile_map.map_to_local(encounter_cell))
+	player.global_position = tile_map.to_global(tile_map.call("map_to_local", encounter_cell))
 	await process_frame
 	overworld.call("force_test_encounter", grass_data, 5)
 	await process_frame

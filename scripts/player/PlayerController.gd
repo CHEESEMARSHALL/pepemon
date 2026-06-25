@@ -13,6 +13,7 @@ signal facing_changed(direction: Vector2i)
 
 @export_group("Tile Detection")
 @export var tile_map_path: NodePath
+@export var object_tile_layer_paths: Array[NodePath] = []
 @export var ground_layer: int = 0
 @export var grass_custom_data_key: String = "terrain"
 @export var grass_custom_data_value: String = "Grass"
@@ -26,15 +27,24 @@ signal facing_changed(direction: Vector2i)
 var _is_moving := false
 var _facing_direction := Vector2i.LEFT
 var _rng := RandomNumberGenerator.new()
+var _encounter_zone_configs_by_cell: Dictionary = {}
 
-@onready var _tile_map := get_node_or_null(tile_map_path) as TileMap
+@onready var _tile_map := get_node_or_null(tile_map_path)
 @onready var _facing_marker := get_node_or_null("FacingMarker") as ColorRect
+var _object_tile_layers: Array[Node] = []
 
 
 func _ready() -> void:
 	_rng.randomize()
 
-	if _tile_map != null and _tile_map.tile_set == null:
+	_object_tile_layers.clear()
+	for layer_path in object_tile_layer_paths:
+		var layer := get_node_or_null(layer_path)
+
+		if layer != null:
+			_object_tile_layers.append(layer)
+
+	if _tile_map != null and _tile_map.get("tile_set") == null:
 		await get_tree().process_frame
 
 	_snap_to_grid()
@@ -70,7 +80,7 @@ func interact() -> void:
 	if _tile_map == null:
 		return
 
-	var current_cell := _tile_map.local_to_map(_tile_map.to_local(global_position))
+	var current_cell := _world_to_map(global_position)
 	interaction_requested.emit(current_cell + _facing_direction)
 
 
@@ -106,13 +116,13 @@ func _step(direction: Vector2i) -> void:
 
 func _get_target_position(direction: Vector2i) -> Vector2:
 	if _tile_map != null:
-		var current_cell := _tile_map.local_to_map(_tile_map.to_local(global_position))
+		var current_cell := _world_to_map(global_position)
 		var target_cell := current_cell + direction
 
 		if _is_blocked_tile(target_cell):
 			return global_position
 
-		return _tile_map.to_global(_tile_map.map_to_local(target_cell))
+		return _map_to_world(target_cell)
 
 	return global_position + Vector2(direction) * fallback_cell_size
 
@@ -164,19 +174,50 @@ func _on_step_finished() -> void:
 
 
 func _check_for_grass_encounter() -> void:
-	if not _is_on_grass_tile():
+	var current_cell := _get_current_cell()
+	var encounter_config := _get_encounter_config(current_cell)
+
+	if encounter_config.is_empty():
 		return
 
-	if _rng.randf() <= grass_encounter_chance:
-		trigger_battle()
+	var encounter_chance := float(encounter_config.get("chance", grass_encounter_chance))
+
+	if _rng.randf() <= encounter_chance:
+		trigger_battle(encounter_config.get("encounter_table", null))
+
+
+func set_encounter_zone_configs(encounter_zone_configs_by_cell: Dictionary) -> void:
+	_encounter_zone_configs_by_cell = encounter_zone_configs_by_cell.duplicate(true)
+
+
+func get_encounter_chance_for_cell(cell: Vector2i) -> float:
+	var encounter_config := _get_encounter_config(cell)
+
+	if encounter_config.is_empty():
+		return 0.0
+
+	return float(encounter_config.get("chance", grass_encounter_chance))
+
+
+func _get_encounter_config(cell: Vector2i) -> Dictionary:
+	if _encounter_zone_configs_by_cell.has(cell):
+		return _encounter_zone_configs_by_cell[cell]
+
+	if not _is_on_grass_tile():
+		return {}
+
+	return {
+		"chance": grass_encounter_chance,
+		"encounter_table": encounter_table,
+	}
 
 
 func _is_on_grass_tile() -> bool:
 	if _tile_map == null:
 		return false
 
-	var current_cell := _tile_map.local_to_map(_tile_map.to_local(global_position))
-	var tile_data := _tile_map.get_cell_tile_data(ground_layer, current_cell)
+	var current_cell := _world_to_map(global_position)
+	var tile_data := _get_tile_data(_tile_map, ground_layer, current_cell)
 
 	if tile_data == null:
 		return false
@@ -191,8 +232,8 @@ func _is_blocked_tile(cell: Vector2i) -> bool:
 
 	var found_tile := false
 
-	for layer in range(_tile_map.get_layers_count()):
-		var tile_data := _tile_map.get_cell_tile_data(layer, cell)
+	for tile_layer in _get_tile_layers():
+		var tile_data := _get_tile_data(tile_layer.get("node"), int(tile_layer.get("layer", 0)), cell)
 
 		if tile_data == null:
 			continue
@@ -211,7 +252,7 @@ func _is_blocked_tile(cell: Vector2i) -> bool:
 func _snap_to_grid() -> void:
 	if _tile_map != null:
 		var current_cell := _get_current_cell()
-		global_position = _tile_map.to_global(_tile_map.map_to_local(current_cell))
+		global_position = _map_to_world(current_cell)
 		return
 
 	global_position = global_position.snapped(fallback_cell_size)
@@ -221,17 +262,61 @@ func _get_current_cell() -> Vector2i:
 	if _tile_map == null:
 		return Vector2i.ZERO
 
-	return _tile_map.local_to_map(_tile_map.to_local(global_position))
+	return _world_to_map(global_position)
 
 
-func trigger_battle() -> void:
-	var encounter := _get_encounter()
+func _world_to_map(world_position: Vector2) -> Vector2i:
+	if _tile_map == null:
+		return Vector2i.ZERO
+
+	return _tile_map.call("local_to_map", _tile_map.to_local(world_position))
+
+
+func _map_to_world(cell: Vector2i) -> Vector2:
+	if _tile_map == null:
+		return global_position
+
+	return _tile_map.to_global(_tile_map.call("map_to_local", cell))
+
+
+func _get_tile_layers() -> Array[Dictionary]:
+	var layers: Array[Dictionary] = []
+
+	if _tile_map == null:
+		return layers
+
+	if _tile_map is TileMap:
+		for layer in range(_tile_map.get_layers_count()):
+			layers.append({ "node": _tile_map, "layer": layer })
+	else:
+		layers.append({ "node": _tile_map, "layer": 0 })
+
+	for object_layer in _object_tile_layers:
+		layers.append({ "node": object_layer, "layer": 0 })
+
+	return layers
+
+
+func _get_tile_data(tile_layer: Node, layer: int, cell: Vector2i) -> TileData:
+	if tile_layer == null:
+		return null
+
+	if tile_layer is TileMap:
+		return tile_layer.get_cell_tile_data(layer, cell)
+
+	return tile_layer.call("get_cell_tile_data", cell)
+
+
+func trigger_battle(encounter_table_override: Resource = null) -> void:
+	var encounter := _get_encounter(encounter_table_override)
 	battle_triggered.emit(encounter.get("monster"), int(encounter.get("level", 5)))
 
 
-func _get_encounter() -> Dictionary:
-	if encounter_table != null and encounter_table.has_method("get_random_encounter"):
-		var encounter = encounter_table.call("get_random_encounter", _rng)
+func _get_encounter(encounter_table_override: Resource = null) -> Dictionary:
+	var active_encounter_table := encounter_table_override if encounter_table_override != null else encounter_table
+
+	if active_encounter_table != null and active_encounter_table.has_method("get_random_encounter"):
+		var encounter = active_encounter_table.call("get_random_encounter", _rng)
 
 		if encounter is Dictionary and encounter.has("monster"):
 			return encounter

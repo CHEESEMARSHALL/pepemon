@@ -8,6 +8,7 @@ enum InteractionAction {
 }
 
 @export var grid_cell := Vector2i.ZERO
+@export var use_scene_position := true
 @export var interactable_id := ""
 @export_multiline var dialogue_text := ""
 @export_multiline var defeated_dialogue_text := ""
@@ -40,12 +41,19 @@ func _ready() -> void:
 	hide_alert_marker()
 
 
-func place_on_tile_map(tile_map: TileMap) -> void:
+func place_on_tile_map(tile_map: Node) -> void:
 	if tile_map == null:
 		return
 
-	global_position = tile_map.to_global(tile_map.map_to_local(grid_cell))
+	global_position = tile_map.to_global(tile_map.call("map_to_local", grid_cell))
 	refresh_visual()
+
+
+func sync_grid_cell_from_tile_map(tile_map: Node) -> void:
+	if tile_map == null or not use_scene_position:
+		return
+
+	grid_cell = tile_map.call("local_to_map", tile_map.to_local(global_position))
 
 
 func get_interaction_text() -> String:

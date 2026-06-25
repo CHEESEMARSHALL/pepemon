@@ -1,29 +1,29 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/game/GameManager.gd" id="1_game_manager"]
-[ext_resource type="PackedScene" path="res://scenes/overworld/Overworld.tscn" id="2_overworld"]
+[ext_resource type="PackedScene" path="res://scenes/overworld/Route1.tscn" id="2_qhvg8"]
 [ext_resource type="PackedScene" path="res://scenes/battle/BattleUI.tscn" id="3_battle"]
 [ext_resource type="Resource" path="res://data/monsters/FireMonster.tres" id="4_starter"]
 [ext_resource type="Resource" path="res://data/monsters/WaterMonster.tres" id="5_water"]
 [ext_resource type="Resource" path="res://data/items/Potion.tres" id="6_potion"]
 [ext_resource type="Resource" path="res://data/overworld/Route1.tres" id="7_route_1"]
 
-[node name="GameRoot" type="Node"]
+[node name="GameRoot" type="Node" unique_id=981291369]
 script = ExtResource("1_game_manager")
-overworld_scene = ExtResource("2_overworld")
+overworld_scene = ExtResource("2_qhvg8")
 starting_map_data = ExtResource("7_route_1")
 battle_scene = ExtResource("3_battle")
 starter_monster_data = ExtResource("4_starter")
 starter_party_data = Array[Resource]([ExtResource("4_starter"), ExtResource("5_water")])
 potion_item = ExtResource("6_potion")
 
-[node name="SceneRoot" type="Node" parent="."]
+[node name="SceneRoot" type="Node" parent="." unique_id=1039460338]
 unique_name_in_owner = true
 
-[node name="RouteTransitionLayer" type="CanvasLayer" parent="."]
+[node name="RouteTransitionLayer" type="CanvasLayer" parent="." unique_id=2079088476]
 layer = 20
 
-[node name="RouteTransitionFade" type="ColorRect" parent="RouteTransitionLayer"]
+[node name="RouteTransitionFade" type="ColorRect" parent="RouteTransitionLayer" unique_id=2090786391]
 unique_name_in_owner = true
 visible = false
 modulate = Color(1, 1, 1, 0)
@@ -35,9 +35,9 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 1)
 
-[node name="OverworldMenuLayer" type="CanvasLayer" parent="."]
+[node name="OverworldMenuLayer" type="CanvasLayer" parent="." unique_id=416138110]
 
-[node name="OverworldMenuOverlay" type="Control" parent="OverworldMenuLayer"]
+[node name="OverworldMenuOverlay" type="Control" parent="OverworldMenuLayer" unique_id=519377590]
 unique_name_in_owner = true
 visible = false
 layout_mode = 3
@@ -47,7 +47,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MenuDim" type="ColorRect" parent="OverworldMenuLayer/OverworldMenuOverlay"]
+[node name="MenuDim" type="ColorRect" parent="OverworldMenuLayer/OverworldMenuOverlay" unique_id=1435469410]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -56,7 +56,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.45)
 
-[node name="MenuPanel" type="PanelContainer" parent="OverworldMenuLayer/OverworldMenuOverlay"]
+[node name="MenuPanel" type="PanelContainer" parent="OverworldMenuLayer/OverworldMenuOverlay" unique_id=820388766]
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 1.0
@@ -70,44 +70,44 @@ offset_bottom = 170.0
 grow_horizontal = 0
 grow_vertical = 2
 
-[node name="MenuMargin" type="MarginContainer" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel"]
+[node name="MenuMargin" type="MarginContainer" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel" unique_id=1706702576]
 layout_mode = 2
 theme_override_constants/margin_left = 16
 theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 16
 
-[node name="MenuLayout" type="VBoxContainer" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin"]
+[node name="MenuLayout" type="VBoxContainer" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin" unique_id=1040905417]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="MenuTitleLabel" type="Label" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout"]
+[node name="MenuTitleLabel" type="Label" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout" unique_id=1755512748]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Party"
 theme_override_font_sizes/font_size = 24
+text = "Party"
 
-[node name="TabRow" type="HBoxContainer" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout"]
+[node name="TabRow" type="HBoxContainer" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout" unique_id=902201119]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="PartyTabButton" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/TabRow"]
+[node name="PartyTabButton" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/TabRow" unique_id=1201516875]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(96, 38)
 layout_mode = 2
 text = "Party"
 
-[node name="BagTabButton" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/TabRow"]
+[node name="BagTabButton" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/TabRow" unique_id=1177302111]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(96, 38)
 layout_mode = 2
 text = "Bag"
 
-[node name="MenuContentPanel" type="PanelContainer" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout"]
+[node name="MenuContentPanel" type="PanelContainer" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout" unique_id=1451061232]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="MenuContentLabel" type="Label" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/MenuContentPanel"]
+[node name="MenuContentLabel" type="Label" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/MenuContentPanel" unique_id=923954131]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(280, 150)
 layout_mode = 2
@@ -115,72 +115,72 @@ text = "No monsters."
 vertical_alignment = 1
 autowrap_mode = 3
 
-[node name="LeaderButtonGrid" type="GridContainer" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout"]
+[node name="LeaderButtonGrid" type="GridContainer" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout" unique_id=1380951882]
 unique_name_in_owner = true
 layout_mode = 2
-columns = 2
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
+columns = 2
 
-[node name="LeaderButton1" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/LeaderButtonGrid"]
+[node name="LeaderButton1" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/LeaderButtonGrid" unique_id=2135509878]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(132, 34)
 layout_mode = 2
 text = "Lead 1"
 
-[node name="LeaderButton2" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/LeaderButtonGrid"]
+[node name="LeaderButton2" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/LeaderButtonGrid" unique_id=118766844]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(132, 34)
 layout_mode = 2
 text = "Lead 2"
 
-[node name="LeaderButton3" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/LeaderButtonGrid"]
+[node name="LeaderButton3" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/LeaderButtonGrid" unique_id=1709332293]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(132, 34)
 layout_mode = 2
 text = "Lead 3"
 
-[node name="LeaderButton4" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/LeaderButtonGrid"]
+[node name="LeaderButton4" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/LeaderButtonGrid" unique_id=221437775]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(132, 34)
 layout_mode = 2
 text = "Lead 4"
 
-[node name="LeaderButton5" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/LeaderButtonGrid"]
+[node name="LeaderButton5" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/LeaderButtonGrid" unique_id=1466382936]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(132, 34)
 layout_mode = 2
 text = "Lead 5"
 
-[node name="LeaderButton6" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/LeaderButtonGrid"]
+[node name="LeaderButton6" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/LeaderButtonGrid" unique_id=324582991]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(132, 34)
 layout_mode = 2
 text = "Lead 6"
 
-[node name="ActionRow" type="HBoxContainer" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout"]
+[node name="ActionRow" type="HBoxContainer" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout" unique_id=1423929748]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="UsePotionButton" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/ActionRow"]
+[node name="UsePotionButton" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/ActionRow" unique_id=1447000921]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(112, 38)
 layout_mode = 2
 text = "Use Potion"
 
-[node name="RestPartyButton" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/ActionRow"]
+[node name="RestPartyButton" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/ActionRow" unique_id=325902013]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(112, 38)
 layout_mode = 2
 text = "Rest Party"
 
-[node name="SaveButton" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/ActionRow"]
+[node name="SaveButton" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/ActionRow" unique_id=1306209780]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(96, 38)
 layout_mode = 2
 text = "Save"
 
-[node name="CloseMenuButton" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/ActionRow"]
+[node name="CloseMenuButton" type="Button" parent="OverworldMenuLayer/OverworldMenuOverlay/MenuPanel/MenuMargin/MenuLayout/ActionRow" unique_id=930973591]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(96, 38)
 layout_mode = 2

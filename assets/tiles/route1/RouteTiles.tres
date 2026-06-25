@@ -1,6 +1,6 @@
-[gd_resource type="TileSet" format=3]
+[gd_resource type="TileSet" format=3 uid="uid://b4w8gi7bxis31"]
 
-[ext_resource type="Texture2D" path="res://assets/tiles/route1/route1_tiles.png" id="1_44ghf"]
+[ext_resource type="Texture2D" uid="uid://cguojgfw7vhnu" path="res://assets/tiles/route1/route1_tiles.png" id="1_44ghf"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_tpjah"]
 texture = ExtResource("1_44ghf")
@@ -24,6 +24,24 @@ texture_region_size = Vector2i(32, 32)
 6:0/0 = 0
 6:0/0/custom_data_0 = "House"
 6:0/0/custom_data_1 = true
+7:0/0 = 0
+7:0/0/custom_data_0 = "House"
+7:0/0/custom_data_1 = true
+8:0/0 = 0
+8:0/0/custom_data_0 = "House"
+8:0/0/custom_data_1 = true
+9:0/0 = 0
+9:0/0/custom_data_0 = "House"
+9:0/0/custom_data_1 = true
+10:0/0 = 0
+10:0/0/custom_data_0 = "House"
+10:0/0/custom_data_1 = true
+11:0/0 = 0
+11:0/0/custom_data_0 = "House"
+11:0/0/custom_data_1 = true
+12:0/0 = 0
+12:0/0/custom_data_0 = "House"
+12:0/0/custom_data_1 = true
 
 [resource]
 tile_size = Vector2i(32, 32)

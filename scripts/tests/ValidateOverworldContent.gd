@@ -50,10 +50,29 @@ func _validate_map_data() -> void:
 		quit(1)
 		return
 
+	if str(route_transition.get("target_scene_path", "")) != "res://scenes/overworld/Route2.tscn":
+		push_error("Route1.tres transition should point to Route2.tscn.")
+		quit(1)
+		return
+
 	var route_2 = load(route_transition.get("target_map_path"))
 
 	if route_2 == null or route_2.map_name != "Pepemon Route 2":
 		push_error("Route1.tres transition does not load Route 2.")
+		quit(1)
+		return
+
+	var route_2_scene = load(route_transition.get("target_scene_path")) as PackedScene
+
+	if route_2_scene == null:
+		push_error("Route1.tres transition does not load Route2.tscn.")
+		quit(1)
+		return
+
+	var route_2_transition: Dictionary = route_2.get_transition_entry(Vector2i(1, 6))
+
+	if route_2_transition.is_empty() or str(route_2_transition.get("target_scene_path", "")) != "res://scenes/overworld/Route1.tscn":
+		push_error("Route2.tres transition should point back to Route1.tscn.")
 		quit(1)
 		return
 
@@ -98,12 +117,12 @@ func _validate_map_data() -> void:
 		push_error("Route1.tres should include multiple authored signs.")
 		quit(1)
 
-	if route_data.get_inspect_message(Vector2i(2, 1)).is_empty():
+	if route_data.get_inspect_message(Vector2i(3, 2)).is_empty():
 		push_error("Route1.tres should include inspect text for the route cottage.")
 		quit(1)
 		return
 
-	if route_data.get_inspect_prompt(Vector2i(2, 1)) != "Knock":
+	if route_data.get_inspect_prompt(Vector2i(3, 2)) != "Knock":
 		push_error("Route1.tres should use a custom cottage inspect prompt.")
 		quit(1)
 		return
@@ -178,25 +197,28 @@ func _validate_route_interactable_data(route_data: Resource, route_label: String
 func _validate_scene_content() -> void:
 	var overworld := await _instantiate_overworld()
 	var player := overworld.find_child("Player", true, false) as PlayerController
-	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
+	var tile_map := _get_ground_tile_layer(overworld)
 	var hint_label := overworld.get_node("%HintLabel") as Label
 	var debug_label := overworld.get_node("%DebugLabel") as Label
 	var interactables := overworld.get_node("%Interactables") as Node2D
+	var content_markers := overworld.get_node("%ContentMarkers") as Node2D
 	var interaction_prompt := overworld.get_node("%InteractionPrompt") as PanelContainer
 	var interaction_prompt_label := overworld.get_node("%InteractionPromptLabel") as Label
 	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
 	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
 
-	if player == null or tile_map == null or hint_label == null or debug_label == null or interactables == null or interaction_prompt == null or interaction_prompt_label == null or dialogue_panel == null or dialogue_label == null:
+	if player == null or tile_map == null or hint_label == null or debug_label == null or interactables == null or content_markers == null or interaction_prompt == null or interaction_prompt_label == null or dialogue_panel == null or dialogue_label == null:
 		push_error("Overworld content validation could not find required scene nodes.")
 		quit(1)
 		return
 
+	_validate_authored_content_nodes(content_markers, interactables, tile_map, 5, 6, "Route 1")
+	_validate_authored_navigation_nodes(overworld, tile_map, Vector2i(8, 8), Vector2i(9, 7), Vector2i(4, 4), "Route 1")
 	_validate_authored_route_1_tile_map(tile_map, overworld.get("map_data"))
 	player.grass_encounter_chance = 0.0
 	overworld.call("_update_debug_hud")
 	await process_frame
-	var start_cell := tile_map.local_to_map(tile_map.to_local(player.global_position))
+	var start_cell := _world_to_map(tile_map, player.global_position)
 
 	if start_cell != Vector2i(8, 8):
 		push_error("Expected player to start on cell (8, 8), got %s." % str(start_cell))
@@ -218,6 +240,7 @@ func _validate_scene_content() -> void:
 	_validate_tile_terrain(tile_map, 1, Vector2i(0, 0), "Tree", true)
 	_validate_tile_terrain(tile_map, 0, Vector2i(2, 1), "Dirt", false)
 	_validate_tile_terrain(tile_map, 1, Vector2i(2, 1), "House", true)
+	_validate_tile_terrain(tile_map, 1, Vector2i(3, 2), "House", true)
 	_validate_tile_terrain(tile_map, 0, Vector2i(12, 10), "Grass", false)
 	_validate_tile_terrain(tile_map, 1, Vector2i(12, 10), "Sign", true)
 	await _validate_dynamic_overlay_restore(overworld, tile_map, Vector2i(12, 10), "Sign")
@@ -236,32 +259,32 @@ func _validate_scene_content() -> void:
 	_validate_alert_marker(interactables, "TrainerRook", false)
 	_validate_interactable_visual(interactables, "Route1Potion", Color(0.56, 0.28, 0.86, 1.0))
 
-	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(5, 8)))
+	player.global_position = _map_to_world(tile_map, Vector2i(3, 3))
 	await process_frame
 
 	var before_wall_step := player.global_position
-	var blocked_target: Vector2 = player.call("_get_target_position", Vector2i.LEFT)
+	var blocked_target: Vector2 = player.call("_get_target_position", Vector2i.UP)
 
 	if not blocked_target.is_equal_approx(before_wall_step):
 		push_error("Authored wall tile returned a movement target.")
 		quit(1)
 		return
 
-	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(8, 8)))
+	player.global_position = _map_to_world(tile_map, Vector2i(8, 8))
 	await process_frame
 	var grass_target: Vector2 = player.call("_get_target_position", Vector2i.RIGHT)
-	var grass_cell := tile_map.local_to_map(tile_map.to_local(grass_target))
+	var grass_cell := _world_to_map(tile_map, grass_target)
 
 	if grass_cell != Vector2i(9, 8):
 		push_error("Authored grass tile did not return a valid movement target.")
 		quit(1)
 		return
 
-	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(9, 8)))
+	player.global_position = _map_to_world(tile_map, Vector2i(9, 8))
 	overworld.call("_update_debug_hud")
 	await process_frame
-	_validate_debug_hud(debug_label, "Pepemon Route 1", Vector2i(9, 8), "Grass", 0)
-	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(8, 8)))
+	_validate_debug_hud(debug_label, "Pepemon Route 1", Vector2i(9, 8), "Grass", 10)
+	player.global_position = _map_to_world(tile_map, Vector2i(8, 8))
 	overworld.call("_update_debug_hud")
 	await process_frame
 	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(8, 8), Vector2i.LEFT, "Read")
@@ -284,8 +307,8 @@ func _validate_scene_content() -> void:
 	await _close_dialogue(dialogue_panel, player)
 	await _validate_blocked_dialogue_interactable(player, dialogue_panel, dialogue_label, tile_map, Vector2i(6, 9), Vector2i.DOWN, "Keeper Sol")
 	await _close_dialogue(dialogue_panel, player)
-	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(2, 2), Vector2i.UP, "Knock")
-	await _validate_inspectable_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(2, 2), Vector2i.UP, "route keeper")
+	await _validate_interaction_prompt(player, interaction_prompt, interaction_prompt_label, tile_map, Vector2i(3, 3), Vector2i.UP, "Knock")
+	await _validate_inspectable_dialogue(player, dialogue_panel, dialogue_label, tile_map, Vector2i(3, 3), Vector2i.UP, "route keeper")
 	await _close_dialogue(dialogue_panel, player)
 
 	overworld.trainer_battle_triggered.connect(_on_trainer_battle_triggered)
@@ -312,26 +335,35 @@ func _validate_scene_content() -> void:
 
 func _validate_route_2_scene_content() -> void:
 	var route_2_data = load("res://data/overworld/Route2.tres")
-	var overworld := await _instantiate_overworld(route_2_data)
+	var overworld := await _instantiate_overworld(route_2_data, "res://scenes/overworld/Route2.tscn")
 	var player := overworld.find_child("Player", true, false) as PlayerController
-	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
+	var tile_map := _get_ground_tile_layer(overworld)
 	var hint_label := overworld.get_node("%HintLabel") as Label
 	var debug_label := overworld.get_node("%DebugLabel") as Label
 	var interactables := overworld.get_node("%Interactables") as Node2D
+	var content_markers := overworld.get_node("%ContentMarkers") as Node2D
 	var interaction_prompt := overworld.get_node("%InteractionPrompt") as PanelContainer
 	var interaction_prompt_label := overworld.get_node("%InteractionPromptLabel") as Label
 	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
 	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
 
-	if player == null or tile_map == null or hint_label == null or debug_label == null or interactables == null or interaction_prompt == null or interaction_prompt_label == null or dialogue_panel == null or dialogue_label == null:
+	if player == null or tile_map == null or hint_label == null or debug_label == null or interactables == null or content_markers == null or interaction_prompt == null or interaction_prompt_label == null or dialogue_panel == null or dialogue_label == null:
 		push_error("Route 2 scene validation could not find required scene nodes.")
 		quit(1)
 		return
 
+	if overworld.name != "Route2":
+		push_error("Route 2 scene validation did not instantiate Route2.tscn.")
+		quit(1)
+		return
+
+	_validate_authored_content_nodes(content_markers, interactables, tile_map, 2, 3, "Route 2")
+	_validate_authored_navigation_nodes(overworld, tile_map, Vector2i(1, 6), Vector2i(5, 2), Vector2i(4, 2), "Route 2")
+	_validate_authored_route_2_tile_map(tile_map, route_2_data)
 	player.grass_encounter_chance = 0.0
 	overworld.call("_update_debug_hud")
 	await process_frame
-	var start_cell := tile_map.local_to_map(tile_map.to_local(player.global_position))
+	var start_cell := _world_to_map(tile_map, player.global_position)
 
 	if start_cell != Vector2i(1, 6):
 		push_error("Route 2 scene did not start at the authored start cell.")
@@ -349,6 +381,10 @@ func _validate_route_2_scene_content() -> void:
 		return
 
 	_validate_debug_hud(debug_label, "Pepemon Route 2", Vector2i(1, 6), "Dirt", 0)
+	_validate_tile_terrain(tile_map, 0, Vector2i(5, 2), "Grass", false)
+	_validate_tile_terrain(tile_map, 1, Vector2i(7, 9), "Sign", true)
+	_validate_tile_terrain(tile_map, 0, Vector2i(2, 5), "Dirt", false)
+	_validate_tile_terrain(tile_map, 1, Vector2i(2, 5), "Tree", true)
 	_validate_interactable_visual(interactables, "DrifterNia", Color(0.24, 0.36, 0.86, 1.0))
 	_validate_interactable_visual(interactables, "TrainerPike", Color(0.92, 0.52, 0.16, 1.0))
 	_validate_alert_marker(interactables, "TrainerPike", false)
@@ -381,7 +417,7 @@ func _validate_route_2_scene_content() -> void:
 func _validate_trainer_sight_scene() -> void:
 	var overworld := await _instantiate_overworld()
 	var player := overworld.find_child("Player", true, false) as PlayerController
-	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
+	var tile_map := _get_ground_tile_layer(overworld)
 	var interactables := overworld.get_node("%Interactables") as Node2D
 	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
 	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
@@ -389,7 +425,7 @@ func _validate_trainer_sight_scene() -> void:
 	overworld.trainer_battle_triggered.connect(_on_trainer_battle_triggered)
 	player.battle_triggered.connect(_on_wild_battle_triggered)
 	player.grass_encounter_chance = 1.0
-	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(9, 8)))
+	player.global_position = _map_to_world(tile_map, Vector2i(9, 8))
 	_battle_monster = null
 	_battle_level = 0
 	_wild_battle_triggered = false
@@ -461,19 +497,19 @@ func _validate_route_transition_flow() -> void:
 
 	var overworld := scene_root.get_child(0)
 	var player := overworld.find_child("Player", true, false) as PlayerController
-	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
-	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(14, 6)))
+	var tile_map := _get_ground_tile_layer(overworld)
+	player.global_position = _map_to_world(tile_map, Vector2i(14, 6))
 	overworld.call("_on_player_step_finished", Vector2i(14, 6))
 	await _wait_for_current_map(scene_root, "Pepemon Route 2")
 	await _wait_for_route_transition_idle(game_root)
 
 	overworld = scene_root.get_child(0)
 	player = overworld.find_child("Player", true, false) as PlayerController
-	tile_map = overworld.get_node("%GroundTileMap") as TileMap
+	tile_map = _get_ground_tile_layer(overworld)
 	var route_2_data = overworld.get("map_data")
-	var route_2_cell := tile_map.local_to_map(tile_map.to_local(player.global_position))
+	var route_2_cell := _world_to_map(tile_map, player.global_position)
 
-	if route_2_data == null or route_2_data.map_name != "Pepemon Route 2" or route_2_cell != Vector2i(1, 6):
+	if overworld.name != "Route2" or route_2_data == null or route_2_data.map_name != "Pepemon Route 2" or route_2_cell != Vector2i(1, 6):
 		push_error("Route transition did not move the player to Route 2.")
 		quit(1)
 		return
@@ -494,11 +530,11 @@ func _validate_route_transition_flow() -> void:
 
 	overworld = scene_root.get_child(0)
 	player = overworld.find_child("Player", true, false) as PlayerController
-	tile_map = overworld.get_node("%GroundTileMap") as TileMap
+	tile_map = _get_ground_tile_layer(overworld)
 	var route_1_data = overworld.get("map_data")
-	var route_1_cell := tile_map.local_to_map(tile_map.to_local(player.global_position))
+	var route_1_cell := _world_to_map(tile_map, player.global_position)
 
-	if route_1_data == null or route_1_data.map_name != "Pepemon Route 1" or route_1_cell != Vector2i(14, 6):
+	if overworld.name != "Route1" or route_1_data == null or route_1_data.map_name != "Pepemon Route 1" or route_1_cell != Vector2i(14, 6):
 		push_error("Return transition did not move the player back to Route 1.")
 		quit(1)
 		return
@@ -538,7 +574,14 @@ func _validate_grass_encounter_flow() -> void:
 		quit(1)
 		return
 
-	player.grass_encounter_chance = 1.0
+	var route_data: Resource = overworld.get("map_data")
+	player.grass_encounter_chance = 0.0
+	player.set_encounter_zone_configs({
+		Vector2i(9, 8): {
+			"chance": 1.0,
+			"encounter_table": route_data.encounter_table,
+		},
+	})
 	Input.action_press("ui_right")
 	await create_timer(player.move_time + 0.25).timeout
 	Input.action_release("ui_right")
@@ -588,14 +631,14 @@ func _validate_game_manager_trainer_state_flow() -> void:
 	var scene_root := game_root.get_node("%SceneRoot")
 	var overworld := scene_root.get_child(0)
 	var player := overworld.find_child("Player", true, false) as PlayerController
-	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
+	var tile_map := _get_ground_tile_layer(overworld)
 
 	if player == null or tile_map == null:
 		push_error("Trainer state validation could not find overworld player.")
 		quit(1)
 		return
 
-	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(10, 8)))
+	player.global_position = _map_to_world(tile_map, Vector2i(10, 8))
 	overworld.call("_on_player_step_finished", Vector2i(10, 8))
 	await process_frame
 	await create_timer(0.25).timeout
@@ -620,10 +663,10 @@ func _validate_game_manager_trainer_state_flow() -> void:
 
 	overworld = scene_root.get_child(0)
 	player = overworld.find_child("Player", true, false) as PlayerController
-	tile_map = overworld.get_node("%GroundTileMap") as TileMap
+	tile_map = _get_ground_tile_layer(overworld)
 	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
 	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
-	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(10, 7)))
+	player.global_position = _map_to_world(tile_map, Vector2i(10, 7))
 	player.set("_facing_direction", Vector2i.UP)
 	player.interact()
 	await process_frame
@@ -662,11 +705,11 @@ func _validate_game_manager_pickup_flow() -> void:
 	var scene_root := game_root.get_node("%SceneRoot")
 	var overworld := scene_root.get_child(0)
 	var player := overworld.find_child("Player", true, false) as PlayerController
-	var tile_map := overworld.get_node("%GroundTileMap") as TileMap
+	var tile_map := _get_ground_tile_layer(overworld)
 	var dialogue_panel := overworld.get_node("%DialoguePanel") as PanelContainer
 	var dialogue_label := overworld.get_node("%DialogueLabel") as Label
 
-	player.global_position = tile_map.to_global(tile_map.map_to_local(Vector2i(5, 3)))
+	player.global_position = _map_to_world(tile_map, Vector2i(5, 3))
 	player.set("_facing_direction", Vector2i.UP)
 	player.interact()
 	await process_frame
@@ -704,11 +747,11 @@ func _validate_game_manager_pickup_flow() -> void:
 	game_root.queue_free()
 
 
-func _instantiate_overworld(map_override: Resource = null) -> Node:
-	var overworld_scene := load("res://scenes/overworld/Overworld.tscn") as PackedScene
+func _instantiate_overworld(map_override: Resource = null, scene_path := "res://scenes/overworld/Route1.tscn") -> Node:
+	var overworld_scene := load(scene_path) as PackedScene
 
 	if overworld_scene == null:
-		push_error("Failed to load Overworld.tscn.")
+		push_error("Failed to load %s." % scene_path)
 		quit(1)
 		return null
 
@@ -791,8 +834,129 @@ func _validate_alert_marker(interactables: Node2D, interactable_name: String, ex
 		quit(1)
 
 
-func _validate_tile_terrain(tile_map: TileMap, layer: int, cell: Vector2i, expected_terrain: String, expected_blocked: bool) -> void:
-	var tile_data := tile_map.get_cell_tile_data(layer, cell)
+func _validate_authored_content_nodes(content_markers: Node2D, interactables: Node2D, tile_map: Node, minimum_markers: int, minimum_interactables: int, route_label: String) -> void:
+	if content_markers.get_child_count() < minimum_markers:
+		push_error("%s should define signs, inspections, and exits as scene ContentMarkers." % route_label)
+		quit(1)
+		return
+
+	if interactables.get_child_count() < minimum_interactables:
+		push_error("%s should define NPCs, trainers, and pickups as authored scene interactables." % route_label)
+		quit(1)
+		return
+
+	for marker in content_markers.get_children():
+		if not marker.has_method("sync_grid_cell_from_tile_map"):
+			continue
+
+		if not bool(marker.get("use_scene_position")):
+			push_error("%s content marker %s should use scene-position placement." % [route_label, marker.name])
+			quit(1)
+			return
+
+		if not _world_to_map(tile_map, marker.global_position) == marker.get("grid_cell"):
+			push_error("%s content marker %s is not positioned on its grid cell." % [route_label, marker.name])
+			quit(1)
+			return
+
+		if marker.get_node_or_null("Body") == null or marker.get_node_or_null("Label") == null:
+			push_error("%s content marker %s is missing editor-visible handles." % [route_label, marker.name])
+			quit(1)
+			return
+
+	for interactable in interactables.get_children():
+		if not interactable.has_method("place_on_tile_map"):
+			continue
+
+		if not bool(interactable.get("use_scene_position")):
+			push_error("%s interactable %s should use scene-position placement." % [route_label, interactable.name])
+			quit(1)
+			return
+
+		if not _world_to_map(tile_map, interactable.global_position) == interactable.get("grid_cell"):
+			push_error("%s interactable %s is not positioned on its grid cell." % [route_label, interactable.name])
+			quit(1)
+			return
+
+
+func _validate_authored_navigation_nodes(overworld: Node, tile_map: Node, expected_spawn_cell: Vector2i, expected_zone_cell: Vector2i, expected_zone_size: Vector2i, route_label: String) -> void:
+	var spawn_points := overworld.get_node_or_null("%SpawnPoints") as Node2D
+	var encounter_zones := overworld.get_node_or_null("%EncounterZones") as Node2D
+
+	if spawn_points == null:
+		push_error("%s should define scene SpawnPoints." % route_label)
+		quit(1)
+		return
+
+	if encounter_zones == null:
+		push_error("%s should define scene EncounterZones." % route_label)
+		quit(1)
+		return
+
+	var default_spawn := spawn_points.get_node_or_null("Default")
+
+	if default_spawn == null or not default_spawn.has_method("sync_grid_cell_from_tile_map"):
+		push_error("%s is missing an authored Default spawn point." % route_label)
+		quit(1)
+		return
+
+	default_spawn.sync_grid_cell_from_tile_map(tile_map)
+
+	if default_spawn.get("grid_cell") != expected_spawn_cell:
+		push_error("%s Default spawn point is on %s, expected %s." % [route_label, str(default_spawn.get("grid_cell")), str(expected_spawn_cell)])
+		quit(1)
+		return
+
+	if _world_to_map(tile_map, default_spawn.global_position) != expected_spawn_cell:
+		push_error("%s Default spawn point is not aligned to the TileMap." % route_label)
+		quit(1)
+		return
+
+	var found_zone := false
+
+	for zone in encounter_zones.get_children():
+		if not zone.has_method("sync_grid_cell_from_tile_map") or not zone.has_method("get_zone_cells"):
+			continue
+
+		zone.sync_grid_cell_from_tile_map(tile_map)
+
+		if zone.get("grid_cell") != expected_zone_cell:
+			continue
+
+		found_zone = true
+
+		if zone.get("size_in_cells") != expected_zone_size:
+			push_error("%s encounter zone has size %s, expected %s." % [route_label, str(zone.get("size_in_cells")), str(expected_zone_size)])
+			quit(1)
+			return
+
+		var covered_cells: Array[Vector2i] = zone.get_zone_cells()
+
+		if not covered_cells.has(expected_zone_cell):
+			push_error("%s encounter zone does not include its origin cell." % route_label)
+			quit(1)
+			return
+
+		var far_cell := expected_zone_cell + expected_zone_size - Vector2i.ONE
+
+		if not covered_cells.has(far_cell):
+			push_error("%s encounter zone does not include its far corner." % route_label)
+			quit(1)
+			return
+
+		if float(zone.get("encounter_chance")) <= 0.0:
+			push_error("%s encounter zone should define a non-zero encounter chance." % route_label)
+			quit(1)
+			return
+
+	if not found_zone:
+		push_error("%s should define the expected authored encounter zone." % route_label)
+		quit(1)
+		return
+
+
+func _validate_tile_terrain(tile_map: Node, layer: int, cell: Vector2i, expected_terrain: String, expected_blocked: bool) -> void:
+	var tile_data := _get_cell_tile_data(tile_map, layer, cell)
 
 	if tile_data == null:
 		push_error("Expected tile data on layer %d at %s." % [layer, str(cell)])
@@ -812,18 +976,20 @@ func _validate_tile_terrain(tile_map: TileMap, layer: int, cell: Vector2i, expec
 		quit(1)
 
 
-func _validate_authored_route_1_tile_map(tile_map: TileMap, route_data: Resource) -> void:
-	if tile_map.tile_set == null:
+func _validate_authored_route_1_tile_map(tile_map: Node, route_data: Resource) -> void:
+	var tile_set := _get_tile_set(tile_map)
+
+	if tile_set == null:
 		push_error("Route 1 TileMap does not have an authored TileSet.")
 		quit(1)
 		return
 
-	if tile_map.tile_set.resource_path != "res://assets/tiles/route1/RouteTiles.tres":
-		push_error("Route 1 TileMap should use the shared RouteTiles.tres TileSet, got %s." % tile_map.tile_set.resource_path)
+	if tile_set.resource_path != "res://assets/tiles/route1/RouteTiles.tres":
+		push_error("Route 1 TileMap should use the shared RouteTiles.tres TileSet, got %s." % tile_set.resource_path)
 		quit(1)
 		return
 
-	if tile_map.get_layers_count() < 2 or tile_map.get_layer_name(0) != "Ground" or tile_map.get_layer_name(1) != "Objects":
+	if not _has_expected_route_1_layers(tile_map):
 		push_error("Route 1 TileMap should have Ground and Objects layers.")
 		quit(1)
 		return
@@ -836,7 +1002,7 @@ func _validate_authored_route_1_tile_map(tile_map: TileMap, route_data: Resource
 
 	for sign_entry in route_data.sign_messages:
 		var sign_cell: Vector2i = sign_entry.get("cell", Vector2i(-999, -999))
-		var sign_tile_data := tile_map.get_cell_tile_data(1, sign_cell)
+		var sign_tile_data := _get_cell_tile_data(tile_map, 1, sign_cell)
 
 		if sign_tile_data == null or str(sign_tile_data.get_custom_data("terrain")) != "Sign":
 			push_error("Sign message at %s does not match an authored sign tile." % str(sign_cell))
@@ -844,9 +1010,41 @@ func _validate_authored_route_1_tile_map(tile_map: TileMap, route_data: Resource
 			return
 
 
-func _is_tile_blocked_on_any_layer(tile_map: TileMap, cell: Vector2i) -> bool:
-	for layer in range(tile_map.get_layers_count()):
-		var tile_data := tile_map.get_cell_tile_data(layer, cell)
+func _validate_authored_route_2_tile_map(tile_map: Node, route_data: Resource) -> void:
+	var tile_set := _get_tile_set(tile_map)
+
+	if tile_set == null:
+		push_error("Route 2 TileMap does not have an authored TileSet.")
+		quit(1)
+		return
+
+	if tile_set.resource_path != "res://assets/tiles/route1/RouteTiles.tres":
+		push_error("Route 2 TileMap should use the shared RouteTiles.tres TileSet, got %s." % tile_set.resource_path)
+		quit(1)
+		return
+
+	if not _has_expected_route_1_layers(tile_map):
+		push_error("Route 2 TileMap should have Ground and Objects layers.")
+		quit(1)
+		return
+
+	_validate_tile_terrain(tile_map, 0, Vector2i(5, 2), "Grass", false)
+	_validate_tile_terrain(tile_map, 0, Vector2i(1, 6), "Dirt", false)
+	_validate_tile_terrain(tile_map, 1, Vector2i(2, 5), "Tree", true)
+
+	for sign_entry in route_data.sign_messages:
+		var sign_cell: Vector2i = sign_entry.get("cell", Vector2i(-999, -999))
+		var sign_tile_data := _get_cell_tile_data(tile_map, 1, sign_cell)
+
+		if sign_tile_data == null or str(sign_tile_data.get_custom_data("terrain")) != "Sign":
+			push_error("Route 2 sign message at %s does not match an authored sign tile." % str(sign_cell))
+			quit(1)
+			return
+
+
+func _is_tile_blocked_on_any_layer(tile_map: Node, cell: Vector2i) -> bool:
+	for layer_info in _get_tile_layers(tile_map):
+		var tile_data := _get_cell_tile_data(layer_info.get("node"), int(layer_info.get("layer", 0)), cell)
 
 		if tile_data != null and bool(tile_data.get_custom_data("blocked")):
 			return true
@@ -854,7 +1052,7 @@ func _is_tile_blocked_on_any_layer(tile_map: TileMap, cell: Vector2i) -> bool:
 	return false
 
 
-func _validate_dynamic_overlay_restore(overworld: Node, tile_map: TileMap, cell: Vector2i, expected_restored_terrain: String) -> void:
+func _validate_dynamic_overlay_restore(overworld: Node, tile_map: Node, cell: Vector2i, expected_restored_terrain: String) -> void:
 	overworld.call("_set_dynamic_overlay_tile", cell, Vector2i(4, 0))
 	await process_frame
 	_validate_tile_terrain(tile_map, 1, cell, "NPC", true)
@@ -863,18 +1061,97 @@ func _validate_dynamic_overlay_restore(overworld: Node, tile_map: TileMap, cell:
 	_validate_tile_terrain(tile_map, 1, cell, expected_restored_terrain, true)
 
 
-func _validate_dynamic_overlay_clear(overworld: Node, tile_map: TileMap, cell: Vector2i) -> void:
+func _validate_dynamic_overlay_clear(overworld: Node, tile_map: Node, cell: Vector2i) -> void:
 	overworld.call("_set_dynamic_overlay_tile", cell, Vector2i(4, 0))
 	await process_frame
 	_validate_tile_terrain(tile_map, 1, cell, "NPC", true)
 	overworld.call("_clear_dynamic_overlay_tile", cell)
 	await process_frame
 
-	var tile_data := tile_map.get_cell_tile_data(1, cell)
+	var tile_data := _get_cell_tile_data(tile_map, 1, cell)
 
 	if tile_data != null:
 		push_error("Dynamic overlay clear should leave no object tile at %s." % str(cell))
 		quit(1)
+
+
+func _get_ground_tile_layer(overworld: Node) -> Node:
+	var tile_map := overworld.get_node_or_null("%GroundTileMap")
+
+	if tile_map != null:
+		return tile_map
+
+	return overworld.get_node_or_null("%Ground")
+
+
+func _get_objects_tile_layer(tile_map: Node) -> Node:
+	if tile_map == null:
+		return null
+
+	var parent := tile_map.get_parent()
+
+	if parent == null:
+		return null
+
+	return parent.get_node_or_null("%Objects")
+
+
+func _map_to_world(tile_map: Node, cell: Vector2i) -> Vector2:
+	return tile_map.to_global(tile_map.call("map_to_local", cell))
+
+
+func _world_to_map(tile_map: Node, world_position: Vector2) -> Vector2i:
+	return tile_map.call("local_to_map", tile_map.to_local(world_position))
+
+
+func _get_tile_set(tile_map: Node) -> TileSet:
+	if tile_map == null:
+		return null
+
+	return tile_map.get("tile_set") as TileSet
+
+
+func _has_expected_route_1_layers(tile_map: Node) -> bool:
+	if tile_map is TileMap:
+		return tile_map.get_layers_count() >= 2 and tile_map.get_layer_name(0) == "Ground" and tile_map.get_layer_name(1) == "Objects"
+
+	var objects_layer := _get_objects_tile_layer(tile_map)
+	return tile_map != null and tile_map.name == "Ground" and objects_layer != null and objects_layer.name == "Objects"
+
+
+func _get_tile_layers(tile_map: Node) -> Array[Dictionary]:
+	var layers: Array[Dictionary] = []
+
+	if tile_map == null:
+		return layers
+
+	if tile_map is TileMap:
+		for layer in range(tile_map.get_layers_count()):
+			layers.append({ "node": tile_map, "layer": layer })
+	else:
+		layers.append({ "node": tile_map, "layer": 0 })
+		var objects_layer := _get_objects_tile_layer(tile_map)
+
+		if objects_layer != null:
+			layers.append({ "node": objects_layer, "layer": 1 })
+
+	return layers
+
+
+func _get_cell_tile_data(tile_map: Node, layer: int, cell: Vector2i) -> TileData:
+	if tile_map == null:
+		return null
+
+	if tile_map is TileMap:
+		return tile_map.get_cell_tile_data(layer, cell)
+
+	if layer == 1:
+		var objects_layer := _get_objects_tile_layer(tile_map)
+
+		if objects_layer != null:
+			return objects_layer.call("get_cell_tile_data", cell)
+
+	return tile_map.call("get_cell_tile_data", cell)
 
 
 func _validate_debug_hud(debug_label: Label, expected_map_name: String, expected_cell: Vector2i, expected_terrain: String, expected_encounter_percent: int) -> void:
@@ -937,12 +1214,12 @@ func _validate_interaction_prompt(
 	player: PlayerController,
 	interaction_prompt: PanelContainer,
 	interaction_prompt_label: Label,
-	tile_map: TileMap,
+	tile_map: Node,
 	start_cell: Vector2i,
 	direction: Vector2i,
 	expected_text: String
 ) -> void:
-	player.global_position = tile_map.to_global(tile_map.map_to_local(start_cell))
+	player.global_position = _map_to_world(tile_map, start_cell)
 	await process_frame
 	player.set_facing_direction(direction)
 	await process_frame
@@ -961,7 +1238,7 @@ func _validate_blocked_dialogue_interactable(
 	player: PlayerController,
 	dialogue_panel: PanelContainer,
 	dialogue_label: Label,
-	tile_map: TileMap,
+	tile_map: Node,
 	start_cell: Vector2i,
 	direction: Vector2i,
 	expected_text: String
@@ -973,7 +1250,7 @@ func _validate_blocked_dialogue_interactable(
 		quit(1)
 		return
 
-	player.global_position = tile_map.to_global(tile_map.map_to_local(start_cell))
+	player.global_position = _map_to_world(tile_map, start_cell)
 	await process_frame
 	var position_before_step := player.global_position
 	var target_position: Vector2 = player.call("_get_target_position", direction)
@@ -996,12 +1273,12 @@ func _validate_inspectable_dialogue(
 	player: PlayerController,
 	dialogue_panel: PanelContainer,
 	dialogue_label: Label,
-	tile_map: TileMap,
+	tile_map: Node,
 	start_cell: Vector2i,
 	direction: Vector2i,
 	expected_text: String
 ) -> void:
-	player.global_position = tile_map.to_global(tile_map.map_to_local(start_cell))
+	player.global_position = _map_to_world(tile_map, start_cell)
 	await process_frame
 	player.set("_facing_direction", direction)
 	player.interact()
@@ -1012,10 +1289,10 @@ func _validate_inspectable_dialogue(
 		quit(1)
 
 
-func _validate_trainer_interactable(player: PlayerController, tile_map: TileMap, start_cell: Vector2i, direction: Vector2i, expected_level: int) -> void:
+func _validate_trainer_interactable(player: PlayerController, tile_map: Node, start_cell: Vector2i, direction: Vector2i, expected_level: int) -> void:
 	_battle_monster = null
 	_battle_level = 0
-	player.global_position = tile_map.to_global(tile_map.map_to_local(start_cell))
+	player.global_position = _map_to_world(tile_map, start_cell)
 	await process_frame
 	var position_before_step := player.global_position
 	var target_position: Vector2 = player.call("_get_target_position", direction)
@@ -1038,14 +1315,14 @@ func _validate_defeated_trainer_dialogue(
 	player: PlayerController,
 	dialogue_panel: PanelContainer,
 	dialogue_label: Label,
-	tile_map: TileMap,
+	tile_map: Node,
 	start_cell: Vector2i,
 	direction: Vector2i,
 	expected_text: String
 ) -> void:
 	_battle_monster = null
 	_battle_level = 0
-	player.global_position = tile_map.to_global(tile_map.map_to_local(start_cell))
+	player.global_position = _map_to_world(tile_map, start_cell)
 	await process_frame
 	player.set("_facing_direction", direction)
 	player.interact()
@@ -1065,7 +1342,7 @@ func _validate_pickup_interactable(
 	player: PlayerController,
 	dialogue_panel: PanelContainer,
 	dialogue_label: Label,
-	tile_map: TileMap,
+	tile_map: Node,
 	start_cell: Vector2i,
 	direction: Vector2i,
 	expected_id: String,
@@ -1076,7 +1353,7 @@ func _validate_pickup_interactable(
 	_pickup_id = ""
 	_pickup_item_key = ""
 	_pickup_item_count = 0
-	player.global_position = tile_map.to_global(tile_map.map_to_local(start_cell))
+	player.global_position = _map_to_world(tile_map, start_cell)
 	await process_frame
 	player.set("_facing_direction", direction)
 	player.interact()
@@ -1096,13 +1373,13 @@ func _validate_collected_pickup_dialogue(
 	player: PlayerController,
 	dialogue_panel: PanelContainer,
 	dialogue_label: Label,
-	tile_map: TileMap,
+	tile_map: Node,
 	start_cell: Vector2i,
 	direction: Vector2i,
 	expected_text: String
 ) -> void:
 	_pickup_id = ""
-	player.global_position = tile_map.to_global(tile_map.map_to_local(start_cell))
+	player.global_position = _map_to_world(tile_map, start_cell)
 	await process_frame
 	player.set("_facing_direction", direction)
 	player.interact()

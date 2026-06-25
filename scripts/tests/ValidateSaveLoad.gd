@@ -37,6 +37,7 @@ func _init() -> void:
 	}
 	var world_state := {
 		"map_path": "res://data/overworld/Route2.tres",
+		"scene_path": "res://scenes/overworld/Route2.tscn",
 		"player_cell": Vector2i(5, 6),
 	}
 
@@ -76,6 +77,11 @@ func _init() -> void:
 
 	if not save_data.has("world_state") or save_data["world_state"].get("map_path", "") != "res://data/overworld/Route2.tres":
 		push_error("SaveManager failed to save the current map path.")
+		quit(1)
+		return
+
+	if save_data["world_state"].get("scene_path", "") != "res://scenes/overworld/Route2.tscn":
+		push_error("SaveManager failed to save the current overworld scene path.")
 		quit(1)
 		return
 

@@ -5,7 +5,7 @@ Drop a 32px tile sheet at:
 
 `assets/tiles/route1/route1_tiles.png`
 
-The overworld loader expects a single horizontal row of 32x32 tiles, so the full image should be 224x32 pixels. Tiles are read in this order:
+The overworld loader expects a single horizontal row of 32x32 tiles, so the full image should be 416x32 pixels. Tiles are read in this order:
 
 1. Dirt / walkable ground
 2. Grass / wild encounter tile
@@ -14,6 +14,19 @@ The overworld loader expects a single horizontal row of 32x32 tiles, so the full
 5. NPC placeholder / blocked interactable tile
 6. Tree / blocked scenery tile
 7. House / blocked scenery tile
+8. Cottage roof left / blocked scenery tile
+9. Cottage roof middle / blocked scenery tile
+10. Cottage roof right / blocked scenery tile
+11. Cottage wall left / blocked scenery tile
+12. Cottage door / blocked scenery tile
+13. Cottage wall right / blocked scenery tile
+
+The cottage pieces are painted on the `Objects` layer as a 3x2 block:
+
+```text
+roof left   roof middle   roof right
+wall left   door          wall right
+```
 
 Route maps can use two symbol layers:
 
