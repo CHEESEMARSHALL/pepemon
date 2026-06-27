@@ -3,7 +3,7 @@ extends Node2D
 signal battle_triggered(enemy_monster: Resource, enemy_level: int)
 signal trainer_battle_triggered(trainer_id: String, enemy_monster: Resource, enemy_level: int)
 signal pickup_collected(pickup_id: String, item_key: String, item_count: int, item_name: String)
-signal route_transition_requested(target_map: Resource, target_start_cell: Vector2i, target_scene: PackedScene)
+signal route_transition_requested(target_map: Resource, target_start_cell: Vector2i, target_scene: PackedScene, target_spawn_id: String)
 
 @export var map_data: Resource
 @export var authored_map_data: Resource
@@ -11,6 +11,7 @@ signal route_transition_requested(target_map: Resource, target_start_cell: Vecto
 @export var interactable_scene: PackedScene
 @export var route_tile_sheet: Texture2D
 @export var player_start_cell_override := Vector2i(-999, -999)
+@export var player_start_spawn_id_override := ""
 
 const CELL_SIZE := Vector2i(32, 32)
 const SOURCE_ID := 0
@@ -141,6 +142,11 @@ func _setup_map() -> void:
 
 
 func _get_player_start_cell() -> Vector2i:
+	var start_spawn_id := player_start_spawn_id_override.strip_edges()
+
+	if not start_spawn_id.is_empty() and _spawn_points_by_id.has(start_spawn_id):
+		return _spawn_points_by_id[start_spawn_id]
+
 	if player_start_cell_override != Vector2i(-999, -999):
 		return player_start_cell_override
 
@@ -535,7 +541,7 @@ func _check_route_transition(cell: Vector2i) -> bool:
 			target_scene = load(target_scene_path) as PackedScene
 
 	_player.movement_enabled = false
-	route_transition_requested.emit(target_map, transition.get("target_start_cell", Vector2i.ZERO), target_scene)
+	route_transition_requested.emit(target_map, transition.get("target_start_cell", Vector2i.ZERO), target_scene, str(transition.get("target_spawn_id", "")))
 	return true
 
 

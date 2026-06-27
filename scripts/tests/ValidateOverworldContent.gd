@@ -16,6 +16,7 @@ func _run() -> void:
 	_validate_map_data()
 	await _validate_scene_content()
 	await _validate_route_2_scene_content()
+	await _validate_named_spawn_overrides()
 	await _validate_trainer_sight_scene()
 	await _validate_route_transition_flow()
 	await _validate_grass_encounter_flow()
@@ -55,6 +56,11 @@ func _validate_map_data() -> void:
 		quit(1)
 		return
 
+	if str(route_transition.get("target_spawn_id", "")) != "west_gate":
+		push_error("Route1.tres transition should target Route 2's west_gate spawn.")
+		quit(1)
+		return
+
 	var route_2 = load(route_transition.get("target_map_path"))
 
 	if route_2 == null or route_2.map_name != "Pepemon Route 2":
@@ -73,6 +79,11 @@ func _validate_map_data() -> void:
 
 	if route_2_transition.is_empty() or str(route_2_transition.get("target_scene_path", "")) != "res://scenes/overworld/Route1.tscn":
 		push_error("Route2.tres transition should point back to Route1.tscn.")
+		quit(1)
+		return
+
+	if str(route_2_transition.get("target_spawn_id", "")) != "east_gate":
+		push_error("Route2.tres transition should target Route 1's east_gate spawn.")
 		quit(1)
 		return
 
@@ -414,6 +425,34 @@ func _validate_route_2_scene_content() -> void:
 	overworld.queue_free()
 
 
+func _validate_named_spawn_overrides() -> void:
+	var route_1_data = load("res://data/overworld/Route1.tres")
+	var route_1 := await _instantiate_overworld(route_1_data, "res://scenes/overworld/Route1.tscn", Vector2i(8, 8), "east_gate")
+	var route_1_player := route_1.find_child("Player", true, false) as PlayerController
+	var route_1_tile_map := _get_ground_tile_layer(route_1)
+	var route_1_cell := _world_to_map(route_1_tile_map, route_1_player.global_position)
+
+	if route_1_cell != Vector2i(14, 6):
+		push_error("Route 1 east_gate spawn override started at %s." % str(route_1_cell))
+		quit(1)
+		return
+
+	route_1.queue_free()
+
+	var route_2_data = load("res://data/overworld/Route2.tres")
+	var route_2 := await _instantiate_overworld(route_2_data, "res://scenes/overworld/Route2.tscn", Vector2i(5, 5), "west_gate")
+	var route_2_player := route_2.find_child("Player", true, false) as PlayerController
+	var route_2_tile_map := _get_ground_tile_layer(route_2)
+	var route_2_cell := _world_to_map(route_2_tile_map, route_2_player.global_position)
+
+	if route_2_cell != Vector2i(1, 6):
+		push_error("Route 2 west_gate spawn override started at %s." % str(route_2_cell))
+		quit(1)
+		return
+
+	route_2.queue_free()
+
+
 func _validate_trainer_sight_scene() -> void:
 	var overworld := await _instantiate_overworld()
 	var player := overworld.find_child("Player", true, false) as PlayerController
@@ -747,7 +786,12 @@ func _validate_game_manager_pickup_flow() -> void:
 	game_root.queue_free()
 
 
-func _instantiate_overworld(map_override: Resource = null, scene_path := "res://scenes/overworld/Route1.tscn") -> Node:
+func _instantiate_overworld(
+	map_override: Resource = null,
+	scene_path := "res://scenes/overworld/Route1.tscn",
+	start_cell_override := Vector2i(-999, -999),
+	spawn_id_override := ""
+) -> Node:
 	var overworld_scene := load(scene_path) as PackedScene
 
 	if overworld_scene == null:
@@ -759,6 +803,12 @@ func _instantiate_overworld(map_override: Resource = null, scene_path := "res://
 
 	if map_override != null:
 		overworld.set("map_data", map_override)
+
+	if start_cell_override != Vector2i(-999, -999):
+		overworld.set("player_start_cell_override", start_cell_override)
+
+	if not spawn_id_override.is_empty():
+		overworld.set("player_start_spawn_id_override", spawn_id_override)
 
 	get_root().add_child(overworld)
 	await process_frame

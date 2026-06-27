@@ -16,6 +16,7 @@ enum MarkerType {
 @export_file("*.tres", "*.res") var target_map_path := ""
 @export var target_scene: PackedScene
 @export_file("*.tscn", "*.scn") var target_scene_path := ""
+@export var target_spawn_id := ""
 @export var target_start_cell := Vector2i.ZERO
 
 @onready var _body := get_node_or_null("Body") as ColorRect
@@ -71,6 +72,7 @@ func to_transition_entry() -> Dictionary:
 		"target_map_path": target_map_path,
 		"target_scene": target_scene,
 		"target_scene_path": target_scene_path,
+		"target_spawn_id": target_spawn_id,
 		"target_start_cell": target_start_cell,
 	}
 

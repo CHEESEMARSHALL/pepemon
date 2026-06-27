@@ -45,6 +45,7 @@ var _current_scene: Node
 var _current_map_data: Resource
 var _current_overworld_scene: PackedScene
 var _pending_overworld_start_cell := Vector2i(-999, -999)
+var _pending_overworld_spawn_id := ""
 var _current_player_cell := Vector2i(-999, -999)
 var _active_menu_tab := "party"
 var _pending_trainer_id := ""
@@ -85,6 +86,10 @@ func show_overworld() -> void:
 		_current_scene.set("player_start_cell_override", _pending_overworld_start_cell)
 		_current_player_cell = _pending_overworld_start_cell
 		_pending_overworld_start_cell = Vector2i(-999, -999)
+
+	if not _pending_overworld_spawn_id.is_empty():
+		_current_scene.set("player_start_spawn_id_override", _pending_overworld_spawn_id)
+		_pending_overworld_spawn_id = ""
 
 	_scene_root.add_child(_current_scene)
 	_apply_route_state_to_overworld(_current_scene)
@@ -687,7 +692,7 @@ func _collect_pickup(pickup_id: String, item_key: String, item_count: int, _item
 		_route_state["collected_pickups"].append(pickup_id)
 
 
-func _change_route(target_map: Resource, target_start_cell: Vector2i, target_scene: PackedScene = null) -> void:
+func _change_route(target_map: Resource, target_start_cell: Vector2i, target_scene: PackedScene = null, target_spawn_id: String = "") -> void:
 	if target_map == null or _is_route_transitioning:
 		return
 
@@ -697,6 +702,7 @@ func _change_route(target_map: Resource, target_start_cell: Vector2i, target_sce
 	_current_map_data = target_map
 	_current_overworld_scene = target_scene
 	_pending_overworld_start_cell = target_start_cell
+	_pending_overworld_spawn_id = target_spawn_id.strip_edges()
 	_current_player_cell = target_start_cell
 	show_overworld()
 	await _fade_route_transition(0.0)

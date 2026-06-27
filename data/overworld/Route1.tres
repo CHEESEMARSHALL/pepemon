@@ -96,5 +96,6 @@ transitions = Array[Dictionary]([{
 "cell": Vector2i(14, 6),
 "target_map_path": "res://data/overworld/Route2.tres",
 "target_scene_path": "res://scenes/overworld/Route2.tscn",
+"target_spawn_id": "west_gate",
 "target_start_cell": Vector2i(1, 6)
 }])

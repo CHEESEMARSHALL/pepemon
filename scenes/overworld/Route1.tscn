@@ -223,6 +223,28 @@ text = "P"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="EastGate" type="Node2D" parent="SpawnPoints"]
+position = Vector2(464, 208)
+script = ExtResource("6_spawn")
+spawn_id = "east_gate"
+grid_cell = Vector2i(14, 6)
+
+[node name="Body" type="ColorRect" parent="SpawnPoints/EastGate"]
+offset_left = -8.0
+offset_top = -8.0
+offset_right = 8.0
+offset_bottom = 8.0
+color = Color(0.96, 0.32, 0.32, 0.7)
+
+[node name="Label" type="Label" parent="SpawnPoints/EastGate"]
+offset_left = -8.0
+offset_top = -10.0
+offset_right = 8.0
+offset_bottom = 10.0
+text = "P"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="EncounterZones" type="Node2D" parent="."]
 unique_name_in_owner = true
 
@@ -353,6 +375,7 @@ marker_type = 2
 grid_cell = Vector2i(14, 6)
 target_map_path = "res://data/overworld/Route2.tres"
 target_scene_path = "res://scenes/overworld/Route2.tscn"
+target_spawn_id = "west_gate"
 target_start_cell = Vector2i(1, 6)
 
 [node name="Body" type="ColorRect" parent="ContentMarkers/RouteExit_14_6" unique_id=1186919543]
