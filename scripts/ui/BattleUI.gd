@@ -24,6 +24,10 @@ const INVENTORY_CAPTURE_KEY := "capture_capsule"
 @onready var _enemy_hp_label := %EnemyHpLabel as Label
 @onready var _player_health_bar := %PlayerHealthBar as TextureProgressBar
 @onready var _enemy_health_bar := %EnemyHealthBar as TextureProgressBar
+@onready var _player_sprite := %PlayerBattleSprite as TextureRect
+@onready var _enemy_sprite := %EnemyBattleSprite as TextureRect
+@onready var _player_sprite_placeholder := %PlayerSpritePlaceholder as CanvasItem
+@onready var _enemy_sprite_placeholder := %EnemySpritePlaceholder as CanvasItem
 @onready var _message_label := %MessageLabel as Label
 @onready var _fight_button := %FightButton as Button
 @onready var _bag_button := %BagButton as Button
@@ -151,6 +155,8 @@ func _on_battle_started(player_monster: Resource, enemy_monster: Resource, playe
 
 	_player_name_label.text = _get_monster_label(player_monster)
 	_enemy_name_label.text = _get_monster_label(enemy_monster)
+	_set_monster_sprite(_player_sprite, _player_sprite_placeholder, player_monster, false)
+	_set_monster_sprite(_enemy_sprite, _enemy_sprite_placeholder, enemy_monster, true)
 	_player_party = _battle_manager.get_player_party()
 	_player_moves = _get_moves(player_monster)
 	_populate_move_menu()
@@ -259,6 +265,7 @@ func _on_monster_captured(captured_monster: Resource) -> void:
 
 func _on_player_monster_switched(previous_name: String, new_name: String, current_hp: int, max_hp: int) -> void:
 	_player_name_label.text = _get_monster_label(_battle_manager.get("_player_instance"))
+	_set_monster_sprite(_player_sprite, _player_sprite_placeholder, _battle_manager.get("_player_instance"), false)
 	_player_max_hp = max(1, max_hp)
 	_player_moves = _get_moves(_battle_manager.get("_player_instance"))
 	_setup_health_bar(_player_health_bar, _player_max_hp, current_hp)
@@ -455,6 +462,29 @@ func _update_hp_label(label: Label, current_hp: int, max_hp: int) -> void:
 	label.text = "%d/%d" % [current_hp, max_hp]
 
 
+func _set_monster_sprite(sprite: TextureRect, placeholder: CanvasItem, monster: Resource, use_front_sprite: bool) -> void:
+	if sprite == null:
+		return
+
+	var monster_data := _get_monster_data(monster)
+	var texture: Texture2D = null
+
+	if monster_data != null:
+		if use_front_sprite:
+			texture = monster_data.get("front_battle_sprite") as Texture2D
+		else:
+			texture = monster_data.get("back_battle_sprite") as Texture2D
+
+		if texture == null:
+			texture = monster_data.get("front_battle_sprite") as Texture2D
+
+	sprite.texture = texture
+	sprite.visible = texture != null
+
+	if placeholder != null:
+		placeholder.visible = texture == null
+
+
 func _set_command_menu_enabled(is_enabled: bool) -> void:
 	_fight_button.disabled = not is_enabled
 	_bag_button.disabled = not is_enabled
@@ -544,6 +574,18 @@ func _get_moves(monster: Resource) -> Array[Resource]:
 		return resources
 
 	return []
+
+
+func _get_monster_data(monster: Resource) -> Resource:
+	if monster == null:
+		return null
+
+	var data = monster.get("data")
+
+	if data is Resource:
+		return data
+
+	return monster
 
 
 func _get_monster_name(monster: Resource) -> String:

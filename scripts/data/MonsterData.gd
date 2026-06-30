@@ -78,6 +78,10 @@ var primary_type: int = MonsterType.NORMAL
 var secondary_type: int = MonsterType.NORMAL
 @export var has_secondary_type: bool = false
 
+@export_group("Battle Sprites")
+@export var front_battle_sprite: Texture2D
+@export var back_battle_sprite: Texture2D
+
 @export_group("Base Stats")
 @export_range(1, 999, 1) var base_hp: int = 10
 @export_range(1, 999, 1) var base_attack: int = 10

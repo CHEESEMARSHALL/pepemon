@@ -107,8 +107,8 @@ func _validate_map_data() -> void:
 	var route_2_encounter: Dictionary = route_2.encounter_table.get_random_encounter(route_2_rng)
 	var route_2_monster = route_2_encounter.get("monster", null)
 
-	if route_2_monster == null or route_2_monster.monster_name != "Aquabbit" or int(route_2_encounter.get("level", 0)) != 6:
-		push_error("Route2.tres encounter table should produce a level 6 Aquabbit.")
+	if route_2_monster == null or route_2_monster.monster_name != "Tiddler" or int(route_2_encounter.get("level", 0)) != 6:
+		push_error("Route2.tres encounter table should produce a level 6 Tiddler.")
 		quit(1)
 		return
 

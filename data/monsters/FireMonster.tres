@@ -1,15 +1,19 @@
-[gd_resource type="Resource" script_class="MonsterData" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="MonsterData" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/MonsterData.gd" id="1_monster_data"]
 [ext_resource type="Resource" path="res://data/moves/Ember.tres" id="2_ember"]
 [ext_resource type="Resource" path="res://data/moves/FlameBurst.tres" id="3_flame_burst"]
+[ext_resource type="Texture2D" path="res://assets/monsters/Flareimp-Front.png" id="4_flareimp_front"]
+[ext_resource type="Texture2D" path="res://assets/monsters/Flareimp-Back.png" id="5_flareimp_back"]
 
 [resource]
 script = ExtResource("1_monster_data")
-monster_name = "Emberling"
+monster_name = "Flareimp"
 primary_type = 1
 secondary_type = 0
 has_secondary_type = false
+front_battle_sprite = ExtResource("4_flareimp_front")
+back_battle_sprite = ExtResource("5_flareimp_back")
 base_hp = 39
 base_attack = 52
 base_defense = 43

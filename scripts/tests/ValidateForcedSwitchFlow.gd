@@ -44,5 +44,5 @@ func _init() -> void:
 		quit(1)
 		return
 
-	print("Forced switch validation passed: Aquabbit entered after faint.")
+	print("Forced switch validation passed: Tiddler entered after faint.")
 	quit()

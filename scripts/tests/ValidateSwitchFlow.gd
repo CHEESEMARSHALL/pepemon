@@ -55,10 +55,10 @@ func _run() -> void:
 
 	var player_label := battle_ui.get_node("%PlayerNameLabel") as Label
 
-	if player_label == null or not player_label.text.contains("Aquabbit"):
+	if player_label == null or not player_label.text.contains("Tiddler"):
 		push_error("Switch validation did not update the player monster label.")
 		quit(1)
 		return
 
-	print("Switch flow validation passed: active monster is Aquabbit.")
+	print("Switch flow validation passed: active monster is Tiddler.")
 	quit()

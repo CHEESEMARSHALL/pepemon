@@ -46,7 +46,7 @@ func _run() -> void:
 		quit(1)
 		return
 
-	if title_label.text != "Party" or not content_label.text.contains("Emberling") or not content_label.text.contains("Aquabbit") or not content_label.text.contains("XP to next"):
+	if title_label.text != "Party" or not content_label.text.contains("Flareimp") or not content_label.text.contains("Tiddler") or not content_label.text.contains("XP to next"):
 		push_error("Overworld menu did not render the starter party.")
 		quit(1)
 		return
@@ -63,7 +63,7 @@ func _run() -> void:
 
 	var active_monster = game_root.get("_player_monster")
 
-	if active_monster == null or not str(active_monster.call("get_display_name")).contains("Aquabbit") or not content_label.text.contains("* Aquabbit"):
+	if active_monster == null or not str(active_monster.call("get_display_name")).contains("Tiddler") or not content_label.text.contains("* Tiddler"):
 		push_error("Overworld menu did not switch the active party leader.")
 		quit(1)
 		return
@@ -168,7 +168,7 @@ func _run() -> void:
 
 	var player_name_label := battle_ui.get_node("%PlayerNameLabel") as Label
 
-	if player_name_label == null or not player_name_label.text.contains("Aquabbit"):
+	if player_name_label == null or not player_name_label.text.contains("Tiddler"):
 		push_error("Battle did not start with the selected party leader.")
 		quit(1)
 		return

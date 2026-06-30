@@ -15,7 +15,7 @@ func _init() -> void:
 	level_four.setup(fire_data, 4)
 
 	if _has_move(level_four, "Flame Burst"):
-		push_error("Emberling should not know Flame Burst before level 5.")
+		push_error("Flareimp should not know Flame Burst before level 5.")
 		quit(1)
 		return
 
@@ -23,7 +23,7 @@ func _init() -> void:
 	level_five.setup(fire_data, 5)
 
 	if not _has_move(level_five, "Flame Burst"):
-		push_error("Emberling should initialize with Flame Burst at level 5.")
+		push_error("Flareimp should initialize with Flame Burst at level 5.")
 		quit(1)
 		return
 
@@ -34,7 +34,7 @@ func _init() -> void:
 	var learned_moves: Array = result.get("learned_moves", [])
 
 	if not _has_move(leveling_monster, "Flame Burst") or not learned_moves.has("Flame Burst"):
-		push_error("Emberling did not learn Flame Burst while leveling to 5.")
+		push_error("Flareimp did not learn Flame Burst while leveling to 5.")
 		quit(1)
 		return
 
@@ -61,7 +61,7 @@ func _init() -> void:
 		quit(1)
 		return
 
-	print("Move learning validation passed: Emberling learned Flame Burst and supports 6 move slots.")
+	print("Move learning validation passed: Flareimp learned Flame Burst and supports 6 move slots.")
 	quit()
 
 

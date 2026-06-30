@@ -1,14 +1,18 @@
-[gd_resource type="Resource" script_class="MonsterData" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="MonsterData" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/MonsterData.gd" id="1_monster_data"]
 [ext_resource type="Resource" path="res://data/moves/SplashStrike.tres" id="2_splash_strike"]
+[ext_resource type="Texture2D" path="res://assets/monsters/Tiddler-Front.png" id="3_tiddler_front"]
+[ext_resource type="Texture2D" path="res://assets/monsters/Tiddler-Back.png" id="4_tiddler_back"]
 
 [resource]
 script = ExtResource("1_monster_data")
-monster_name = "Aquabbit"
+monster_name = "Tiddler"
 primary_type = 2
 secondary_type = 0
 has_secondary_type = false
+front_battle_sprite = ExtResource("3_tiddler_front")
+back_battle_sprite = ExtResource("4_tiddler_back")
 base_hp = 44
 base_attack = 48
 base_defense = 50
