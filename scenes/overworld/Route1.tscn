@@ -228,6 +228,7 @@ position = Vector2(464, 208)
 script = ExtResource("6_spawn")
 spawn_id = "east_gate"
 grid_cell = Vector2i(14, 6)
+facing_direction = Vector2i(-1, 0)
 
 [node name="Body" type="ColorRect" parent="SpawnPoints/EastGate"]
 offset_left = -8.0

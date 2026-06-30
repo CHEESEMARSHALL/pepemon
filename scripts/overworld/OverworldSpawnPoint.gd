@@ -3,6 +3,7 @@ class_name OverworldSpawnPoint
 
 @export var spawn_id := "default"
 @export var grid_cell := Vector2i.ZERO
+@export var facing_direction := Vector2i.DOWN
 @export var use_scene_position := true
 
 @onready var _body := get_node_or_null("Body") as ColorRect

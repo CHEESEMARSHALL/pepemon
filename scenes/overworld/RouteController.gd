@@ -64,6 +64,7 @@ var _sign_messages_by_cell: Dictionary = {}
 var _inspect_messages_by_cell: Dictionary = {}
 var _transitions_by_cell: Dictionary = {}
 var _spawn_points_by_id: Dictionary = {}
+var _spawn_facing_by_id: Dictionary = {}
 var _encounter_zone_configs_by_cell: Dictionary = {}
 var _authored_overlay_atlas_by_cell: Dictionary = {}
 var _dynamic_overlay_cells: Dictionary = {}
@@ -137,6 +138,7 @@ func _setup_map() -> void:
 
 	var start_cell := _get_player_start_cell()
 	_player.global_position = _map_to_world(start_cell)
+	_player.set_facing_direction(_get_player_start_facing_direction())
 	_player.encounter_table = map_data.encounter_table
 	_player.set_encounter_zone_configs(_encounter_zone_configs_by_cell)
 
@@ -154,6 +156,18 @@ func _get_player_start_cell() -> Vector2i:
 		return _spawn_points_by_id["default"]
 
 	return map_data.player_start_cell
+
+
+func _get_player_start_facing_direction() -> Vector2i:
+	var start_spawn_id := player_start_spawn_id_override.strip_edges()
+
+	if not start_spawn_id.is_empty() and _spawn_facing_by_id.has(start_spawn_id):
+		return _spawn_facing_by_id[start_spawn_id]
+
+	if player_start_cell_override == Vector2i(-999, -999) and _spawn_facing_by_id.has("default"):
+		return _spawn_facing_by_id["default"]
+
+	return _player.get_facing_direction()
 
 
 func _uses_authored_tile_map() -> bool:
@@ -388,6 +402,7 @@ func _setup_scene_content_markers() -> void:
 
 func _setup_scene_spawn_points() -> void:
 	_spawn_points_by_id.clear()
+	_spawn_facing_by_id.clear()
 
 	if _spawn_points == null:
 		return
@@ -397,7 +412,9 @@ func _setup_scene_spawn_points() -> void:
 			continue
 
 		spawn_point.sync_grid_cell_from_tile_map(_ground_tile_map)
-		_spawn_points_by_id[str(spawn_point.get("spawn_id"))] = spawn_point.get("grid_cell")
+		var spawn_id := str(spawn_point.get("spawn_id"))
+		_spawn_points_by_id[spawn_id] = spawn_point.get("grid_cell")
+		_spawn_facing_by_id[spawn_id] = spawn_point.get("facing_direction")
 
 
 func _setup_scene_encounter_zones() -> void:

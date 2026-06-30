@@ -437,6 +437,11 @@ func _validate_named_spawn_overrides() -> void:
 		quit(1)
 		return
 
+	if route_1_player.get_facing_direction() != Vector2i.LEFT:
+		push_error("Route 1 east_gate spawn did not face left.")
+		quit(1)
+		return
+
 	route_1.queue_free()
 
 	var route_2_data = load("res://data/overworld/Route2.tres")
@@ -447,6 +452,11 @@ func _validate_named_spawn_overrides() -> void:
 
 	if route_2_cell != Vector2i(1, 6):
 		push_error("Route 2 west_gate spawn override started at %s." % str(route_2_cell))
+		quit(1)
+		return
+
+	if route_2_player.get_facing_direction() != Vector2i.RIGHT:
+		push_error("Route 2 west_gate spawn did not face right.")
 		quit(1)
 		return
 
@@ -553,6 +563,11 @@ func _validate_route_transition_flow() -> void:
 		quit(1)
 		return
 
+	if player.get_facing_direction() != Vector2i.RIGHT:
+		push_error("Route transition did not face the player into Route 2.")
+		quit(1)
+		return
+
 	if player.encounter_table == null or player.encounter_table != route_2_data.encounter_table:
 		push_error("Route transition did not assign Route 2 encounter data to the player.")
 		quit(1)
@@ -575,6 +590,11 @@ func _validate_route_transition_flow() -> void:
 
 	if overworld.name != "Route1" or route_1_data == null or route_1_data.map_name != "Pepemon Route 1" or route_1_cell != Vector2i(14, 6):
 		push_error("Return transition did not move the player back to Route 1.")
+		quit(1)
+		return
+
+	if player.get_facing_direction() != Vector2i.LEFT:
+		push_error("Return transition did not face the player into Route 1.")
 		quit(1)
 		return
 
