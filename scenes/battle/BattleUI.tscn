@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/BattleUI.gd" id="1_battle_ui"]
 [ext_resource type="Script" path="res://scripts/battle/BattleManager.gd" id="2_battle_manager"]
@@ -23,6 +23,49 @@ colors = PackedColorArray(0.18, 0.78, 0.36, 1, 0.72, 0.95, 0.32, 1)
 gradient = SubResource("Gradient_bar_progress")
 width = 256
 
+[sub_resource type="StyleBoxFlat" id="StyleBox_stat_panel"]
+bg_color = Color(0.91, 0.93, 0.9, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.39, 0.4, 0.42, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_bottom_panel"]
+bg_color = Color(0.96, 0.96, 0.94, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.3, 0.32, 0.34, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_platform_enemy"]
+bg_color = Color(0.38, 0.78, 0.39, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.78, 0.62, 0.28, 1)
+corner_radius_top_left = 64
+corner_radius_top_right = 64
+corner_radius_bottom_right = 64
+corner_radius_bottom_left = 64
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_platform_player"]
+bg_color = Color(0.25, 0.67, 0.34, 1)
+corner_radius_top_left = 56
+corner_radius_top_right = 56
+corner_radius_bottom_right = 56
+corner_radius_bottom_left = 56
+
 [node name="BattleUI" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -46,40 +89,83 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.09, 0.1, 0.13, 1)
+color = Color(0.5, 0.91, 0.76, 1)
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="SkyBand1" type="ColorRect" parent="Background"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 56.0
+grow_horizontal = 2
+color = Color(0.2, 0.82, 0.76, 1)
+
+[node name="SkyBand2" type="ColorRect" parent="Background"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 58.0
+offset_bottom = 104.0
+grow_horizontal = 2
+color = Color(0.46, 0.89, 0.77, 1)
+
+[node name="FieldBand1" type="ColorRect" parent="Background"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 104.0
+offset_bottom = 168.0
+grow_horizontal = 2
+color = Color(0.68, 0.91, 0.43, 1)
+
+[node name="FieldBand2" type="ColorRect" parent="Background"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 168.0
+offset_bottom = 260.0
+grow_horizontal = 2
+color = Color(0.5, 0.85, 0.42, 1)
+
+[node name="BattleField" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 24.0
-offset_top = 24.0
-offset_right = -24.0
-offset_bottom = -24.0
+offset_bottom = -126.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MainLayout" type="VBoxContainer" parent="MarginContainer"]
-layout_mode = 2
-theme_override_constants/separation = 18
+[node name="EnemyPanel" type="PanelContainer" parent="BattleField"]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 12.0
+offset_top = 34.0
+offset_right = 306.0
+offset_bottom = 104.0
+theme_override_styles/panel = SubResource("StyleBox_stat_panel")
 
-[node name="EnemyPanel" type="PanelContainer" parent="MarginContainer/MainLayout"]
+[node name="EnemyStats" type="VBoxContainer" parent="BattleField/EnemyPanel"]
 layout_mode = 2
-size_flags_horizontal = 3
+theme_override_constants/separation = 2
 
-[node name="EnemyStats" type="VBoxContainer" parent="MarginContainer/MainLayout/EnemyPanel"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="EnemyNameLabel" type="Label" parent="MarginContainer/MainLayout/EnemyPanel/EnemyStats"]
+[node name="EnemyNameLabel" type="Label" parent="BattleField/EnemyPanel/EnemyStats"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Enemy"
+theme_override_colors/font_color = Color(0.18, 0.18, 0.2, 1)
 
-[node name="EnemyHealthBar" type="TextureProgressBar" parent="MarginContainer/MainLayout/EnemyPanel/EnemyStats"]
+[node name="EnemyHealthRow" type="HBoxContainer" parent="BattleField/EnemyPanel/EnemyStats"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="EnemyHpTag" type="Label" parent="BattleField/EnemyPanel/EnemyStats/EnemyHealthRow"]
+layout_mode = 2
+text = "HP"
+theme_override_colors/font_color = Color(0.95, 0.62, 0.05, 1)
+
+[node name="EnemyHealthBar" type="TextureProgressBar" parent="BattleField/EnemyPanel/EnemyStats/EnemyHealthRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(320, 24)
+custom_minimum_size = Vector2(190, 12)
 layout_mode = 2
 size_flags_horizontal = 3
 max_value = 100.0
@@ -87,79 +173,116 @@ value = 100.0
 texture_under = SubResource("GradientTexture_bar_under")
 texture_progress = SubResource("GradientTexture_bar_progress")
 
-[node name="EnemyHpLabel" type="Label" parent="MarginContainer/MainLayout/EnemyPanel/EnemyStats"]
+[node name="EnemyHpLabel" type="Label" parent="BattleField/EnemyPanel/EnemyStats"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "0/0"
 horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.18, 0.18, 0.2, 1)
 
-[node name="BattleSpace" type="Control" parent="MarginContainer/MainLayout"]
-custom_minimum_size = Vector2(0, 180)
-layout_mode = 2
-size_flags_vertical = 3
+[node name="EnemyPlatform" type="Panel" parent="BattleField"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -292.0
+offset_top = 150.0
+offset_right = -36.0
+offset_bottom = 224.0
+grow_horizontal = 0
+theme_override_styles/panel = SubResource("StyleBox_platform_enemy")
 
-[node name="EnemySpritePlaceholder" type="ColorRect" parent="MarginContainer/MainLayout/BattleSpace"]
+[node name="EnemySpritePlaceholder" type="ColorRect" parent="BattleField"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -232.0
-offset_top = 0.0
-offset_right = -40.0
-offset_bottom = 160.0
+offset_left = -248.0
+offset_top = 62.0
+offset_right = -72.0
+offset_bottom = 220.0
 grow_horizontal = 0
 color = Color(0.22, 0.24, 0.3, 1)
 
-[node name="EnemyBattleSprite" type="TextureRect" parent="MarginContainer/MainLayout/BattleSpace"]
+[node name="EnemyBattleSprite" type="TextureRect" parent="BattleField"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -232.0
-offset_top = 0.0
-offset_right = -40.0
-offset_bottom = 160.0
+offset_left = -270.0
+offset_top = 42.0
+offset_right = -50.0
+offset_bottom = 220.0
 grow_horizontal = 0
 expand_mode = 1
 stretch_mode = 5
 
-[node name="PlayerSpritePlaceholder" type="ColorRect" parent="MarginContainer/MainLayout/BattleSpace"]
+[node name="PlayerPlatform" type="Panel" parent="BattleField"]
+layout_mode = 1
+offset_left = -28.0
+offset_top = 222.0
+offset_right = 250.0
+offset_bottom = 292.0
+theme_override_styles/panel = SubResource("StyleBox_platform_player")
+
+[node name="PlayerSpritePlaceholder" type="ColorRect" parent="BattleField"]
 unique_name_in_owner = true
 layout_mode = 1
-offset_left = 40.0
-offset_top = 28.0
-offset_right = 232.0
-offset_bottom = 180.0
+offset_left = 24.0
+offset_top = 126.0
+offset_right = 224.0
+offset_bottom = 286.0
 color = Color(0.24, 0.27, 0.22, 1)
 
-[node name="PlayerBattleSprite" type="TextureRect" parent="MarginContainer/MainLayout/BattleSpace"]
+[node name="PlayerBattleSprite" type="TextureRect" parent="BattleField"]
 unique_name_in_owner = true
 layout_mode = 1
-offset_left = 40.0
-offset_top = 28.0
-offset_right = 232.0
-offset_bottom = 180.0
+offset_left = 16.0
+offset_top = 92.0
+offset_right = 242.0
+offset_bottom = 292.0
 expand_mode = 1
 stretch_mode = 5
 
-[node name="PlayerPanel" type="PanelContainer" parent="MarginContainer/MainLayout"]
-layout_mode = 2
-size_flags_horizontal = 3
+[node name="PlayerPanel" type="PanelContainer" parent="BattleField"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -330.0
+offset_top = -132.0
+offset_right = -20.0
+offset_bottom = -48.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBox_stat_panel")
 
-[node name="PlayerStats" type="VBoxContainer" parent="MarginContainer/MainLayout/PlayerPanel"]
+[node name="PlayerStats" type="VBoxContainer" parent="BattleField/PlayerPanel"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 2
 
-[node name="PlayerNameLabel" type="Label" parent="MarginContainer/MainLayout/PlayerPanel/PlayerStats"]
+[node name="PlayerNameLabel" type="Label" parent="BattleField/PlayerPanel/PlayerStats"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Player"
+theme_override_colors/font_color = Color(0.18, 0.18, 0.2, 1)
 
-[node name="PlayerHealthBar" type="TextureProgressBar" parent="MarginContainer/MainLayout/PlayerPanel/PlayerStats"]
+[node name="PlayerHealthRow" type="HBoxContainer" parent="BattleField/PlayerPanel/PlayerStats"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="PlayerHpTag" type="Label" parent="BattleField/PlayerPanel/PlayerStats/PlayerHealthRow"]
+layout_mode = 2
+text = "HP"
+theme_override_colors/font_color = Color(0.95, 0.62, 0.05, 1)
+
+[node name="PlayerHealthBar" type="TextureProgressBar" parent="BattleField/PlayerPanel/PlayerStats/PlayerHealthRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(320, 24)
+custom_minimum_size = Vector2(205, 12)
 layout_mode = 2
 size_flags_horizontal = 3
 max_value = 100.0
@@ -167,173 +290,214 @@ value = 100.0
 texture_under = SubResource("GradientTexture_bar_under")
 texture_progress = SubResource("GradientTexture_bar_progress")
 
-[node name="PlayerHpLabel" type="Label" parent="MarginContainer/MainLayout/PlayerPanel/PlayerStats"]
+[node name="PlayerHpLabel" type="Label" parent="BattleField/PlayerPanel/PlayerStats"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "0/0"
 horizontal_alignment = 2
+theme_override_colors/font_color = Color(0.18, 0.18, 0.2, 1)
 
-[node name="BottomPanel" type="HBoxContainer" parent="MarginContainer/MainLayout"]
+[node name="BottomPanel" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = -122.0
+offset_right = -6.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 8
+
+[node name="MessagePanel" type="PanelContainer" parent="BottomPanel"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 16
+theme_override_styles/panel = SubResource("StyleBox_bottom_panel")
 
-[node name="MessagePanel" type="PanelContainer" parent="MarginContainer/MainLayout/BottomPanel"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="MessageLabel" type="Label" parent="MarginContainer/MainLayout/BottomPanel/MessagePanel"]
+[node name="MessageLabel" type="Label" parent="BottomPanel/MessagePanel"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 96)
 layout_mode = 2
 text = "Battle ready."
+theme_override_colors/font_color = Color(0.18, 0.18, 0.2, 1)
 vertical_alignment = 1
 autowrap_mode = 3
 
-[node name="CommandMenu" type="GridContainer" parent="MarginContainer/MainLayout/BottomPanel"]
+[node name="CommandFrame" type="PanelContainer" parent="BottomPanel"]
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBox_bottom_panel")
+
+[node name="CommandStack" type="Control" parent="BottomPanel/CommandFrame"]
+custom_minimum_size = Vector2(260, 96)
+layout_mode = 2
+
+[node name="CommandMenu" type="GridContainer" parent="BottomPanel/CommandFrame/CommandStack"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 columns = 2
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
 
-[node name="FightButton" type="Button" parent="MarginContainer/MainLayout/BottomPanel/CommandMenu"]
+[node name="FightButton" type="Button" parent="BottomPanel/CommandFrame/CommandStack/CommandMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 44)
+custom_minimum_size = Vector2(120, 42)
 layout_mode = 2
-text = "Fight"
+text = "FIGHT"
 
-[node name="BagButton" type="Button" parent="MarginContainer/MainLayout/BottomPanel/CommandMenu"]
+[node name="BagButton" type="Button" parent="BottomPanel/CommandFrame/CommandStack/CommandMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 44)
+custom_minimum_size = Vector2(120, 42)
 layout_mode = 2
-text = "Bag"
+text = "BAG"
 
-[node name="MonsterButton" type="Button" parent="MarginContainer/MainLayout/BottomPanel/CommandMenu"]
+[node name="MonsterButton" type="Button" parent="BottomPanel/CommandFrame/CommandStack/CommandMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 44)
+custom_minimum_size = Vector2(120, 42)
 layout_mode = 2
-text = "Pokémon"
+text = "POKEMON"
 
-[node name="RunButton" type="Button" parent="MarginContainer/MainLayout/BottomPanel/CommandMenu"]
+[node name="RunButton" type="Button" parent="BottomPanel/CommandFrame/CommandStack/CommandMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 44)
+custom_minimum_size = Vector2(120, 42)
 layout_mode = 2
-text = "Run"
+text = "RUN"
 
-[node name="MoveMenu" type="GridContainer" parent="MarginContainer/MainLayout/BottomPanel"]
+[node name="MoveMenu" type="GridContainer" parent="BottomPanel/CommandFrame/CommandStack"]
 unique_name_in_owner = true
 visible = false
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 columns = 2
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
 
-[node name="MoveButton1" type="Button" parent="MarginContainer/MainLayout/BottomPanel/MoveMenu"]
+[node name="MoveButton1" type="Button" parent="BottomPanel/CommandFrame/CommandStack/MoveMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 44)
+custom_minimum_size = Vector2(120, 42)
 layout_mode = 2
 text = "Move 1"
 
-[node name="MoveButton2" type="Button" parent="MarginContainer/MainLayout/BottomPanel/MoveMenu"]
+[node name="MoveButton2" type="Button" parent="BottomPanel/CommandFrame/CommandStack/MoveMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 44)
+custom_minimum_size = Vector2(120, 42)
 layout_mode = 2
 text = "Move 2"
 
-[node name="MoveButton3" type="Button" parent="MarginContainer/MainLayout/BottomPanel/MoveMenu"]
+[node name="MoveButton3" type="Button" parent="BottomPanel/CommandFrame/CommandStack/MoveMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 44)
+custom_minimum_size = Vector2(120, 42)
 layout_mode = 2
 text = "Move 3"
 
-[node name="MoveButton4" type="Button" parent="MarginContainer/MainLayout/BottomPanel/MoveMenu"]
+[node name="MoveButton4" type="Button" parent="BottomPanel/CommandFrame/CommandStack/MoveMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 44)
+custom_minimum_size = Vector2(120, 42)
 layout_mode = 2
 text = "Move 4"
 
-[node name="MoveButton5" type="Button" parent="MarginContainer/MainLayout/BottomPanel/MoveMenu"]
+[node name="MoveButton5" type="Button" parent="BottomPanel/CommandFrame/CommandStack/MoveMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 44)
+custom_minimum_size = Vector2(120, 42)
 layout_mode = 2
 text = "Move 5"
 
-[node name="MoveButton6" type="Button" parent="MarginContainer/MainLayout/BottomPanel/MoveMenu"]
+[node name="MoveButton6" type="Button" parent="BottomPanel/CommandFrame/CommandStack/MoveMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 44)
+custom_minimum_size = Vector2(120, 42)
 layout_mode = 2
 text = "Move 6"
 
-[node name="BagMenu" type="GridContainer" parent="MarginContainer/MainLayout/BottomPanel"]
+[node name="BagMenu" type="GridContainer" parent="BottomPanel/CommandFrame/CommandStack"]
 unique_name_in_owner = true
 visible = false
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 columns = 1
-theme_override_constants/v_separation = 8
+theme_override_constants/v_separation = 6
 
-[node name="PotionButton" type="Button" parent="MarginContainer/MainLayout/BottomPanel/BagMenu"]
+[node name="PotionButton" type="Button" parent="BottomPanel/CommandFrame/CommandStack/BagMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(140, 44)
+custom_minimum_size = Vector2(240, 28)
 layout_mode = 2
 text = "Potion x3"
 
-[node name="CaptureButton" type="Button" parent="MarginContainer/MainLayout/BottomPanel/BagMenu"]
+[node name="CaptureButton" type="Button" parent="BottomPanel/CommandFrame/CommandStack/BagMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(180, 44)
+custom_minimum_size = Vector2(240, 28)
 layout_mode = 2
 text = "Capture Capsule x3"
 
-[node name="BagBackButton" type="Button" parent="MarginContainer/MainLayout/BottomPanel/BagMenu"]
+[node name="BagBackButton" type="Button" parent="BottomPanel/CommandFrame/CommandStack/BagMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(140, 44)
+custom_minimum_size = Vector2(240, 28)
 layout_mode = 2
 text = "Back"
 
-[node name="PartyMenu" type="GridContainer" parent="MarginContainer/MainLayout/BottomPanel"]
+[node name="PartyMenu" type="GridContainer" parent="BottomPanel/CommandFrame/CommandStack"]
 unique_name_in_owner = true
 visible = false
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 columns = 1
-theme_override_constants/v_separation = 8
+theme_override_constants/v_separation = 4
 
-[node name="PartyButton1" type="Button" parent="MarginContainer/MainLayout/BottomPanel/PartyMenu"]
+[node name="PartyButton1" type="Button" parent="BottomPanel/CommandFrame/CommandStack/PartyMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(180, 38)
+custom_minimum_size = Vector2(240, 22)
 layout_mode = 2
 text = "Party 1"
 
-[node name="PartyButton2" type="Button" parent="MarginContainer/MainLayout/BottomPanel/PartyMenu"]
+[node name="PartyButton2" type="Button" parent="BottomPanel/CommandFrame/CommandStack/PartyMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(180, 38)
+custom_minimum_size = Vector2(240, 22)
 layout_mode = 2
 text = "Party 2"
 
-[node name="PartyButton3" type="Button" parent="MarginContainer/MainLayout/BottomPanel/PartyMenu"]
+[node name="PartyButton3" type="Button" parent="BottomPanel/CommandFrame/CommandStack/PartyMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(180, 38)
+custom_minimum_size = Vector2(240, 22)
 layout_mode = 2
 text = "Party 3"
 
-[node name="PartyButton4" type="Button" parent="MarginContainer/MainLayout/BottomPanel/PartyMenu"]
+[node name="PartyButton4" type="Button" parent="BottomPanel/CommandFrame/CommandStack/PartyMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(180, 38)
+custom_minimum_size = Vector2(240, 22)
 layout_mode = 2
 text = "Party 4"
 
-[node name="PartyButton5" type="Button" parent="MarginContainer/MainLayout/BottomPanel/PartyMenu"]
+[node name="PartyButton5" type="Button" parent="BottomPanel/CommandFrame/CommandStack/PartyMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(180, 38)
+custom_minimum_size = Vector2(240, 22)
 layout_mode = 2
 text = "Party 5"
 
-[node name="PartyButton6" type="Button" parent="MarginContainer/MainLayout/BottomPanel/PartyMenu"]
+[node name="PartyButton6" type="Button" parent="BottomPanel/CommandFrame/CommandStack/PartyMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(180, 38)
+custom_minimum_size = Vector2(240, 22)
 layout_mode = 2
 text = "Party 6"
 
-[node name="PartyBackButton" type="Button" parent="MarginContainer/MainLayout/BottomPanel/PartyMenu"]
+[node name="PartyBackButton" type="Button" parent="BottomPanel/CommandFrame/CommandStack/PartyMenu"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(180, 38)
+custom_minimum_size = Vector2(240, 22)
 layout_mode = 2
 text = "Back"
